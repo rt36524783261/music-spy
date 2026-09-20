@@ -138,6 +138,16 @@
         </div>
     </div>
 
+    <div id="spectatorScreen" class="container" style="display: none;">
+        <div class="content-wrapper">
+            <h1 style="color: #a39589; font-size: 28px;">🚫 遊戲進行中</h1>
+            <p style="font-weight: bold; color: #7a6a5d; margin-top: 20px;">
+                你目前是旁觀者，<br>請等待大家結算完畢...
+            </p>
+            <p style="font-size: 14px; color: #c7bcae; margin-top: 10px;">(中途斷線或切畫面視同放棄本局)</p>
+        </div>
+    </div>
+
     <div id="resultScreen" class="container" style="display: none;">
         <div class="content-wrapper">
             <h1 id="resultTitle">--</h1>
@@ -224,6 +234,7 @@
         let globalPlayers = {}; 
         let globalScores = {}; 
 
+        // 💡 升級版：雙向監聽器！隱藏時取消資格，切回來時強制發送 wake_up 喚醒！
         document.addEventListener('visibilitychange', () => {
             if (document.hidden && currentRoomId) {
                 console.log("切換到背景，強制判定離線...");
@@ -265,21 +276,9 @@
             document.getElementById('modalBtnOk').onclick = () => { document.getElementById('customModal').style.display='none'; if(onOk) onOk(); };
         }
         function switchView(viewId) {
-            ['homeScreen', 'roomScreen', 'playingScreen', 'votingScreen', 'resultScreen'].forEach(id => {
+            ['homeScreen', 'roomScreen', 'playingScreen', 'votingScreen', 'resultScreen', 'spectatorScreen'].forEach(id => {
                 document.getElementById(id).style.display = (id === viewId) ? 'block' : 'none';
             });
-        }
-
-        function renderVoteGrid(players) {
-            const grid = document.getElementById('voteGrid');
-            grid.innerHTML = '';
-            for (const uid in players) {
-                const btn = document.createElement('button');
-                btn.className = 'vote-btn';
-                btn.innerText = players[uid].name;
-                btn.onclick = () => handleVoteClick(uid, btn);
-                grid.appendChild(btn);
-            }
         }
 
         function getMyName() {
@@ -352,33 +351,18 @@
 
         socket.on('room_state_update', (roomState) => {
             if (!currentRoomId) return;
+            
             globalPlayers = roomState.players; 
             globalScores = roomState.scores;
-
-            // 💡 終極狀態機同步：不管你剛剛卡去哪裡，伺服器現在說在哪，你的畫面就切去哪！
-            if (roomState.state === 'LOBBY') {
-                if (document.getElementById('playingScreen').style.display === 'block' || document.getElementById('votingScreen').style.display === 'block') {
-                    showToast("你剛才錯過了結算畫面！");
-                    switchView('roomScreen');
-                }
-            } else if (roomState.state === 'PLAYING') {
-                if (document.getElementById('playingScreen').style.display !== 'block') {
-                    switchView('playingScreen');
-                }
-                if (roomState.isPlayingStarted) {
-                    document.getElementById('downloadList').style.display = 'none';
-                    document.getElementById('countdownNumber').style.display = 'block';
-                }
-                return; // 如果在聽歌，就不更新底下的大廳畫面
-            } else if (roomState.state === 'VOTING') {
-                if (document.getElementById('votingScreen').style.display !== 'block') {
-                    switchView('votingScreen');
-                    renderVoteGrid(roomState.players);
-                }
-                return; // 如果在投票，也不更新大廳畫面
+            
+            const me = roomState.players[myUserId];
+            if (roomState.state !== 'LOBBY' && me && me.isSpectator) {
+                switchView('spectatorScreen');
+                return;
             }
-
-            // 大廳畫面繪製邏輯
+            
+            if (document.getElementById('playingScreen').style.display === 'block' || document.getElementById('votingScreen').style.display === 'block') return; 
+            
             document.getElementById('displayRoomId').innerText = '房間：' + currentRoomId;
             document.getElementById('displaySettings').innerText = `設定：${roomState.settings.duration}秒 | ${roomState.settings.category}`;
             document.getElementById('selectDuration').value = roomState.settings.duration;
@@ -387,8 +371,9 @@
             const listDiv = document.getElementById('playerList');
             listDiv.innerHTML = ''; 
             
+            // 💡 姊姊特製的：最嚴格發車條件檢測
             let allReady = true; 
-            let allOnline = true; 
+            let allOnline = true; // 新增：檢測是否全體都在線上
             let index = 1; 
             
             const isHost = (roomState.hostId === myUserId);
@@ -402,6 +387,7 @@
                 let statusText = p.status !== 'ONLINE' ? '<span style="color: #e07a5f;">斷線中</span>' : 
                                  p.isReady ? '<span style="color: #9cbca7;">準備完成</span>' : '<span style="color: #c7bcae;">準備中</span>';
                 
+                // 💡 只要有任何人狀態不是 ONLINE，或是還沒準備，按鈕就不准出來！
                 if (p.status !== 'ONLINE') allOnline = false;
                 if (!p.isReady) allReady = false; 
 
@@ -425,6 +411,7 @@
                 index++;
             });
 
+            // 💡 這裡加上了 allOnline 的條件判斷
             document.getElementById('startBtn').style.display = 
                 (isHost && allReady && allOnline && Object.keys(roomState.players).length > 1) ? 'inline-block' : 'none';
         });
@@ -453,6 +440,7 @@
             const dlList = document.getElementById('downloadList');
             dlList.innerHTML = '';
             for(let uid in globalPlayers) {
+                if(globalPlayers[uid].isSpectator) continue;
                 dlList.innerHTML += `
                     <div class="dl-item" id="dl_${uid}">
                         <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 10px;">${globalPlayers[uid].name}</span>
@@ -503,7 +491,18 @@
         socket.on('START_VOTING', () => {
             switchView('votingScreen');
             myVoteTarget = null;
-            renderVoteGrid(globalPlayers);
+            
+            const grid = document.getElementById('voteGrid');
+            grid.innerHTML = '';
+            for (const uid in globalPlayers) {
+                if(globalPlayers[uid].isSpectator) continue; 
+                
+                const btn = document.createElement('button');
+                btn.className = 'vote-btn';
+                btn.innerText = globalPlayers[uid].name;
+                btn.onclick = () => handleVoteClick(uid, btn);
+                grid.appendChild(btn);
+            }
 
             let vTime = 20; 
             document.getElementById('voteTimer').innerText = vTime;

@@ -75,7 +75,7 @@ function checkDownloadProgress(roomId) {
   const room = rooms[roomId];
   if (!room || room.state !== 'PLAYING' || room.isPlayingStarted) return;
   
-  const activePlayers = Object.values(room.players).filter(p => p.status === 'ONLINE');
+  const activePlayers = Object.values(room.players).filter(p => p.status === 'ONLINE' && !p.isSpectator);
   const loadedCount = activePlayers.filter(p => p.isLoaded === true).length;
   
   if (loadedCount === activePlayers.length && activePlayers.length > 0) {
@@ -83,12 +83,9 @@ function checkDownloadProgress(roomId) {
     io.to(roomId).emit('START_PLAYING', room.settings.duration);
     
     setTimeout(() => {
-      if(rooms[roomId]) {
-        rooms[roomId].state = 'VOTING';
-        io.to(roomId).emit('START_VOTING');
-        // 加入防呆，確保觸發結算
-        setTimeout(() => { calculateVotes(roomId); }, 20000 + 1000); 
-      }
+      room.state = 'VOTING';
+      io.to(roomId).emit('START_VOTING');
+      setTimeout(() => { calculateVotes(roomId); }, 20000 + 1000); 
     }, room.settings.duration * 1000 + 1000);
   }
 }
@@ -109,7 +106,7 @@ io.on('connection', (socket) => {
       scores: {},
       isPlayingStarted: false
     };
-    rooms[roomId].players[userId] = { name: finalName, socketId: socket.id, status: 'ONLINE', isReady: false, isLoaded: false };
+    rooms[roomId].players[userId] = { name: finalName, socketId: socket.id, status: 'ONLINE', isReady: false, isLoaded: false, isSpectator: false };
     rooms[roomId].scores[userId] = 0; 
 
     socket.join(roomId);
@@ -129,7 +126,7 @@ io.on('connection', (socket) => {
       if (room.state !== 'LOBBY') {
         return socket.emit('error_msg', '遊戲正在進行中，無法加入！');
       }
-      room.players[userId] = { name: userName || '飛天巴庫', socketId: socket.id, status: 'ONLINE', isReady: false, isLoaded: false };
+      room.players[userId] = { name: userName || '飛天巴庫', socketId: socket.id, status: 'ONLINE', isReady: false, isLoaded: false, isSpectator: false };
       if (room.scores[userId] === undefined) room.scores[userId] = 0; 
     }
     socket.join(roomId);
@@ -137,18 +134,15 @@ io.on('connection', (socket) => {
     io.to(roomId).emit('room_state_update', room);
   });
 
+  // 💡 新增：強制喚醒機制 (解決卡在斷線中)
   socket.on('wake_up', ({ roomId, userId }) => {
     const room = rooms[roomId];
     if (room && room.players[userId]) {
+        console.log(`玩家 ${userId} 透過 wake_up 喚醒連線`);
         clearTimeout(disconnectTimers[userId]); 
-        room.players[userId].socketId = socket.id; 
+        room.players[userId].socketId = socket.id; // 更新 socket
         room.players[userId].status = 'ONLINE';
         io.to(roomId).emit('room_state_update', room);
-        
-        // 喚醒時如果是下載階段，檢查進度
-        if (room.state === 'PLAYING' && !room.isPlayingStarted) {
-            checkDownloadProgress(roomId);
-        }
     }
   });
 
@@ -203,6 +197,7 @@ io.on('connection', (socket) => {
         if (room.state === 'LOBBY') {
             room.players[userId].isReady = false; 
         } else {
+            room.players[userId].isSpectator = true; 
             checkDownloadProgress(roomId); 
         }
         io.to(roomId).emit('room_state_update', room);
@@ -254,6 +249,7 @@ io.on('connection', (socket) => {
 
       playerIds.forEach(uid => {
         room.players[uid].isLoaded = false;
+        room.players[uid].isSpectator = false; 
         const targetUrl = (uid === room.undercoverId) ? undercoverUrl : civilianUrl;
         io.to(room.players[uid].socketId).emit('PRELOAD_MUSIC', targetUrl);
       });
@@ -271,7 +267,7 @@ io.on('connection', (socket) => {
 
   socket.on('submit_vote', ({ roomId, userId, targetId }) => {
     const room = rooms[roomId];
-    if (room) {
+    if (room && !room.players[userId].isSpectator) {
       if (targetId === null) delete room.votes[userId]; 
       else room.votes[userId] = targetId;
     }
@@ -285,7 +281,7 @@ io.on('connection', (socket) => {
 
     let voteCounts = {};
     for (let voter in room.votes) {
-      if (room.players[voter] && room.players[voter].status === 'ONLINE') {
+      if (room.players[voter] && room.players[voter].status === 'ONLINE' && !room.players[voter].isSpectator) {
         let target = room.votes[voter];
         if (room.players[target]) { 
           voteCounts[target] = (voteCounts[target] || 0) + 1;
@@ -311,12 +307,12 @@ io.on('connection', (socket) => {
     
     if (winner === '平民勝利') {
       Object.keys(room.players).forEach(uid => {
-        if (uid !== room.undercoverId && room.players[uid].status === 'ONLINE') {
+        if (uid !== room.undercoverId && room.players[uid].status === 'ONLINE' && !room.players[uid].isSpectator) {
           room.scores[uid] += 1;
         }
       });
     } else {
-      if (room.players[room.undercoverId] && room.players[room.undercoverId].status === 'ONLINE') {
+      if (room.players[room.undercoverId] && room.players[room.undercoverId].status === 'ONLINE' && !room.players[room.undercoverId].isSpectator) {
         room.scores[room.undercoverId] += 3;
       }
     }
@@ -336,7 +332,10 @@ io.on('connection', (socket) => {
       undercoverSong: room.undercoverSong
     });
 
-    Object.values(room.players).forEach(p => { p.isReady = false; });
+    Object.values(room.players).forEach(p => {
+        p.isReady = false;
+        p.isSpectator = false; 
+    });
     io.to(roomId).emit('room_state_update', room);
   }
 
@@ -350,6 +349,7 @@ io.on('connection', (socket) => {
           if (room.state === 'LOBBY') {
               room.players[userId].isReady = false; 
           } else {
+              room.players[userId].isSpectator = true; 
               checkDownloadProgress(roomId);
           }
           
