@@ -70,6 +70,28 @@ async function fetchAppleMusicPreview(keyword) {
 
 app.get('/', (req, res) => { res.sendFile(__dirname + '/index.html'); });
 
+// 💡 專屬廣播函式：過濾掉 Node.js 的 Timer 物件，防止 Socket.io 序列化崩潰
+function broadcastRoomState(roomId) {
+  const room = rooms[roomId];
+  if (!room) return;
+
+  // 淺拷貝房間狀態，並挖掉計時器
+  const safeRoom = { ...room };
+  delete safeRoom.playTimeout;
+  delete safeRoom.votingTimeout;
+  delete safeRoom.globalLoadingTimeout;
+  delete safeRoom.singlePlayerIdleTimer;
+  
+  // 深層拷貝玩家狀態
+  safeRoom.players = {};
+  for (const uid in room.players) {
+    safeRoom.players[uid] = { ...room.players[uid] };
+    delete safeRoom.players[uid].offlineTimer;
+  }
+
+  io.to(roomId).emit('room_state_update', safeRoom);
+}
+
 // 💡 管理伺服器休眠機制的單人閒置計時器
 function resetSinglePlayerIdleTimer(roomId) {
   const room = rooms[roomId];
@@ -80,12 +102,11 @@ function resetSinglePlayerIdleTimer(roomId) {
     room.singlePlayerIdleTimer = null;
   }
   
-  // 只有在房間狀態，且房間只有 1 個人時，啟動 10 分鐘閒置計時器
   if (room.state === 'LOBBY' && Object.keys(room.players).length === 1) {
     const singleUserId = Object.keys(room.players)[0];
     room.singlePlayerIdleTimer = setTimeout(() => {
       removePlayer(roomId, singleUserId, '單人閒置超過 10 分鐘，已自動關閉房間進入休眠。');
-    }, 10 * 60 * 1000); // 10 分鐘 (600,000 毫秒)
+    }, 10 * 60 * 1000);
   }
 }
 
@@ -104,18 +125,22 @@ function removePlayer(roomId, userId, kickMsg = null) {
 
   const remaining = Object.keys(room.players);
   if (remaining.length === 0) {
+    // 房間徹底空了，清理所有殘留的計時器防止 Memory Leak
     if (room.singlePlayerIdleTimer) clearTimeout(room.singlePlayerIdleTimer);
+    if (room.playTimeout) clearTimeout(room.playTimeout);
+    if (room.votingTimeout) clearTimeout(room.votingTimeout);
+    if (room.globalLoadingTimeout) clearTimeout(room.globalLoadingTimeout);
     delete rooms[roomId];
   } else {
     if (room.hostId === userId) {
       room.hostId = remaining[0]; 
     }
-    io.to(roomId).emit('room_state_update', room);
+    broadcastRoomState(roomId);
     resetSinglePlayerIdleTimer(roomId);
   }
 }
 
-// 💡 統一的玩家離線(切畫面)處理器：拔除所有 60 秒踢人機制，交給房主判斷
+// 💡 統一的玩家離線(切畫面)處理器
 function handlePlayerOffline(roomId, userId) {
   const room = rooms[roomId];
   if (!room || !room.players[userId]) return;
@@ -123,25 +148,24 @@ function handlePlayerOffline(roomId, userId) {
   const p = room.players[userId];
   p.status = 'OFFLINE';
 
-  // 只要在房間裡切畫面，就無條件取消準備
   if (room.state === 'LOBBY') {
     p.isReady = false;
   }
   
-  io.to(roomId).emit('room_state_update', room);
+  broadcastRoomState(roomId);
   resetSinglePlayerIdleTimer(roomId);
 }
 
 // 💡 統一的玩家回歸處理器
 function handlePlayerOnline(roomId, userId, socketId) {
   const room = rooms[roomId];
-  if (!room || !room.players[userId]) return false; // 回來時如果已被房主踢除，回傳 false
+  if (!room || !room.players[userId]) return false; 
   
   const p = room.players[userId];
   p.status = 'ONLINE';
   p.socketId = socketId;
   
-  io.to(roomId).emit('room_state_update', room);
+  broadcastRoomState(roomId);
   if (room.state === 'LOADING') checkDownloadProgress(roomId);
   resetSinglePlayerIdleTimer(roomId);
   return true;
@@ -154,7 +178,6 @@ function checkDownloadProgress(roomId) {
   const playerIds = Object.keys(room.players);
   if (playerIds.length === 0) return;
 
-  // 只要「還留在房間內」的人全部載好就發車
   const allLoaded = playerIds.every(uid => room.players[uid].isLoaded);
   
   if (allLoaded) {
@@ -162,14 +185,14 @@ function checkDownloadProgress(roomId) {
     
     room.state = 'PLAYING';
     room.phaseEndTime = Date.now() + (room.settings.duration * 1000); 
-    io.to(roomId).emit('room_state_update', room);
+    broadcastRoomState(roomId);
     io.to(roomId).emit('START_PLAYING_MUSIC');
     
     room.playTimeout = setTimeout(() => {
       if(rooms[roomId]) {
         rooms[roomId].state = 'VOTING';
         rooms[roomId].phaseEndTime = Date.now() + 20000;
-        io.to(roomId).emit('room_state_update', rooms[roomId]);
+        broadcastRoomState(roomId);
         
         rooms[roomId].votingTimeout = setTimeout(() => {
           calculateVotes(roomId);
@@ -200,7 +223,7 @@ io.on('connection', (socket) => {
 
     socket.join(roomId);
     socket.emit('room_joined', roomId);
-    io.to(roomId).emit('room_state_update', rooms[roomId]);
+    broadcastRoomState(roomId);
     resetSinglePlayerIdleTimer(roomId);
   });
 
@@ -217,7 +240,7 @@ io.on('connection', (socket) => {
     }
     socket.join(roomId);
     socket.emit('room_joined', roomId);
-    io.to(roomId).emit('room_state_update', room);
+    broadcastRoomState(roomId);
     resetSinglePlayerIdleTimer(roomId);
   });
 
@@ -257,7 +280,7 @@ io.on('connection', (socket) => {
     const room = rooms[roomId];
     if (room && room.hostId === userId) {
       room.settings = settings;
-      io.to(roomId).emit('room_state_update', room);
+      broadcastRoomState(roomId);
       resetSinglePlayerIdleTimer(roomId);
     }
   });
@@ -266,7 +289,7 @@ io.on('connection', (socket) => {
     const room = rooms[roomId];
     if (room && room.players[userId]) {
       room.players[userId].isReady = !room.players[userId].isReady;
-      io.to(roomId).emit('room_state_update', room);
+      broadcastRoomState(roomId);
       resetSinglePlayerIdleTimer(roomId);
     }
   });
@@ -275,7 +298,7 @@ io.on('connection', (socket) => {
     const room = rooms[roomId];
     if (room && room.players[userId]) {
       room.players[userId].isReady = false;
-      io.to(roomId).emit('room_state_update', room);
+      broadcastRoomState(roomId);
     }
   });
 
@@ -420,10 +443,9 @@ io.on('connection', (socket) => {
     });
 
     Object.values(room.players).forEach(p => p.isReady = false);
-    io.to(roomId).emit('room_state_update', room);
+    broadcastRoomState(roomId);
     resetSinglePlayerIdleTimer(roomId);
   }
-
 });
 
 http.listen(3000, () => console.log('伺服器在 port 3000 苟延殘喘中'));
