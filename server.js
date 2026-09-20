@@ -190,7 +190,7 @@ function checkDownloadProgress(roomId) {
     room.playTimeout = setTimeout(() => {
       if(rooms[roomId]) {
         rooms[roomId].state = 'VOTING';
-        room.isVotingLocked = false; // 💡 重置投票鎖定
+        room.isVotingLocked = false;
         room.phaseEndTime = Date.now() + 20000;
         broadcastRoomState(roomId);
         
@@ -286,7 +286,7 @@ io.on('connection', (socket) => {
 
     rooms[roomId] = { 
       hostId: userId, state: 'LOBBY', players: {},
-      settings: { duration: 15, category: '混合隨機' }, 
+      settings: { duration: 15, category: '小朋友才選擇' }, 
       undercoverId: null, votes: {}, isVotingLocked: false,
       civilianSong: '', undercoverSong: '',
       playedSongs: [], scores: {}, lastResult: null, historyList: [],
@@ -390,10 +390,10 @@ io.on('connection', (socket) => {
       room.undercoverId = playerIds[Math.floor(Math.random() * playerIds.length)];
       
       let pool = [];
-      if (room.settings.category === '混合隨機') {
+      if (room.settings.category === '小朋友才選擇') {
         Object.values(POOLS).forEach(arr => pool = pool.concat(arr));
       } else {
-        pool = POOLS[room.settings.category];
+        pool = POOLS[room.settings.category] || [];
       }
 
       let availablePool = pool.filter(song => !room.playedSongs.includes(song));
@@ -454,25 +454,26 @@ io.on('connection', (socket) => {
     }
   });
 
-  // 💡 投票防手賤開關機制
+  // 💡 嚴格檢測全員投票 + 防手賤鎖定開關
   socket.on('submit_vote', ({ roomId, userId, targetId }) => {
     const room = rooms[roomId];
     if (!room || room.state !== 'VOTING') return;
-    if (room.isVotingLocked) return; // 若已經鎖定（進入最後3秒倒數），不允許再更改或取消
+    if (room.isVotingLocked) return; // 倒數中鎖定，拒絕任何改選或取消
 
     if (targetId === null) delete room.votes[userId]; 
     else room.votes[userId] = targetId;
 
-    io.to(roomId).emit('vote_status_update', {
-      votedCount: Object.keys(room.votes).length,
-      totalCount: Object.keys(room.players).length
-    });
-
     const onlinePlayers = Object.keys(room.players).filter(uid => room.players[uid].status === 'ONLINE');
     const votedOnlineCount = onlinePlayers.filter(uid => room.votes[uid] !== undefined).length;
 
+    io.to(roomId).emit('vote_status_update', {
+      votedCount: votedOnlineCount,
+      totalCount: onlinePlayers.length
+    });
+
+    // 嚴格檢測：必須是「所有線上玩家」都投完票才啟動 3 秒倒數
     if (votedOnlineCount >= onlinePlayers.length && onlinePlayers.length > 0) {
-      room.isVotingLocked = true; // 鎖定投票，防止倒數時改投重置
+      room.isVotingLocked = true; // 鎖定投票，杜絕後續改票重置計時
       const fastEndRemaining = 3000; // 3 秒
       room.phaseEndTime = Date.now() + fastEndRemaining;
       

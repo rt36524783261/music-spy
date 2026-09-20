@@ -7,14 +7,12 @@
     <script src="/socket.io/socket.io.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        /* 💡 溫暖徑向漸層背景 */
         body { 
             background: radial-gradient(circle at center, #fffaf4 0%, #f4ece1 100%); 
             color: #4a4036; font-family: 'Noto Sans TC', sans-serif; 
             display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; 
         }
         
-        /* 💡 溫潤奶茶紙質風：純白容器、微細點狀格紋、溫柔米色邊框、540px寬度 */
         .container { 
             background-color: #ffffff; 
             background-image: radial-gradient(#f0e9df 1px, transparent 1px);
@@ -31,7 +29,6 @@
         input, select { padding: 14px; font-size: 16px; width: 80%; margin-bottom: 20px; border-radius: 12px; border: 2px solid #f2ede4; background: #faf8f5; color: #5a4b41; text-align: center; font-weight: bold; transition: all 0.3s; }
         input:focus, select:focus { outline: none; border-color: #e3a87c; background: #ffffff; }
 
-        /* 💡 實心紮實按鈕風格 */
         button { padding: 14px 24px; font-size: 16px; font-weight: 700; margin: 10px 5px; cursor: pointer; border-radius: 12px; border: none; background-color: #e3a87c; color: white; box-shadow: 0 4px 12px rgba(227, 168, 124, 0.3); transition: all 0.2s; white-space: nowrap; }
         button:hover { background-color: #cf9366; transform: translateY(-2px); }
         .btn-secondary { background-color: #9cbca7; box-shadow: 0 4px 12px rgba(156, 188, 167, 0.3); }
@@ -53,7 +50,6 @@
         .btn-kick { background-color: #e07a5f; color: white; border: none; padding: 4px 10px; font-size: 12px; border-radius: 8px; margin-left: 10px; cursor: pointer; box-shadow: none; }
         .btn-kick:hover { background-color: #c9654b; transform: none; }
 
-        /* 💡 頂部按鈕列：手機緊密間距，電腦版完美置中 */
         .header-btns { 
             display: flex; justify-content: flex-start; flex-wrap: nowrap; align-items: center; 
             width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; 
@@ -87,17 +83,16 @@
         .rank-name-box { flex: 1; min-width: 0; margin-right: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
         .rank-score-box { flex-shrink: 0; color: #cf9366; font-size: 16px; }
 
-        /* 💡 精緻 SVG 啵嚕醬布偶貓造型動畫元件 */
+        /* 💡 啵嚕醬專屬還原版動畫 */
         .cat-box {
-            width: 120px; height: 110px; margin: 10px auto;
+            width: 140px; height: 110px; margin: 10px auto;
             animation: catBob 1.2s ease-in-out infinite alternate;
         }
         @keyframes catBob {
-            0% { transform: translateY(0) rotate(-2deg); }
-            100% { transform: translateY(-8px) rotate(2deg); }
+            0% { transform: translateY(0) rotate(-1deg); }
+            100% { transform: translateY(-6px) rotate(1deg); }
         }
 
-        /* 💡 0% 到 100% 時間進度條 */
         .progress-bar-container {
             width: 100%; height: 10px; background: #f2ede4; border-radius: 5px;
             margin: 15px 0 5px 0; overflow: hidden; border: 1px solid #eaddcc;
@@ -152,7 +147,7 @@
                     <button id="settingBtn" class="btn-outline btn-setting btn-sm" style="display: none;" onclick="openSettings()">遊戲設定</button>
                     <button id="leaveBtn" class="btn-outline btn-sm" onclick="leaveRoom()">退出房間</button>
                 </div>
-                <div class="room-settings-info" id="displaySettings">設定：15秒 | 混合隨機</div>
+                <div class="room-settings-info" id="displaySettings">設定：15秒 | 小朋友才選擇</div>
             </div>
             <div id="playerList" style="margin: 20px 0; min-height: 150px;"></div>
             
@@ -168,42 +163,47 @@
             <h1 id="playStatusTitle" style="color: #cf9366;">音檔下載中...</h1>
             <p id="playStatusDesc" style="color: #a39589; font-weight: bold;">請確保手機音量已開啟</p>
             
-            <!-- 💡 啵嚕醬精緻 SVG 向量圖示元件 -->
+            <!-- 💡 啵嚕醬真實還原版 SVG：額頭倒V白斑、深色面罩、湛藍大眼、趴在容器邊緣 -->
             <div id="catWrapper" style="display: none;">
                 <div class="cat-box">
-                    <svg width="120" height="110" viewBox="0 0 120 110" xmlns="http://www.w3.org/2000/svg">
-                        <!-- 耳機頭帶 -->
-                        <path d="M 25 45 A 35 35 0 0 1 95 45" fill="none" stroke="#e07a5f" stroke-width="5" stroke-linecap="round"/>
-                        <!-- 耳機耳罩 -->
-                        <rect x="15" y="40" width="12" height="22" rx="6" fill="#e07a5f"/>
-                        <rect x="93" y="40" width="12" height="22" rx="6" fill="#e07a5f"/>
+                    <svg width="140" height="110" viewBox="0 0 140 110" xmlns="http://www.w3.org/2000/svg">
+                        <!-- 耳機頭帶與耳罩 -->
+                        <path d="M 30 40 A 40 40 0 0 1 110 40" fill="none" stroke="#e07a5f" stroke-width="5" stroke-linecap="round"/>
+                        <rect x="20" y="32" width="12" height="22" rx="6" fill="#e07a5f"/>
+                        <rect x="108" y="32" width="12" height="22" rx="6" fill="#e07a5f"/>
                         
-                        <!-- 貓咪頭部輪廓 (布偶貓柔順感) -->
-                        <ellipse cx="60" cy="65" rx="42" ry="36" fill="#fdfbf7" stroke="#e3b78f" stroke-width="2"/>
+                        <!-- 貓咪大頭輪廓 (還原圓滾滾澎腮幫子) -->
+                        <ellipse cx="70" cy="62" rx="46" ry="36" fill="#fdfbf7" stroke="#e3b78f" stroke-width="2"/>
                         
-                        <!-- 雙耳 (深色斑紋) -->
-                        <polygon points="25,38 15,10 42,25" fill="#5c4033"/>
-                        <polygon points="95,38 105,10 78,25" fill="#5c4033"/>
+                        <!-- 雙耳 (深色) -->
+                        <polygon points="36,36 22,8 50,22" fill="#5c4033"/>
+                        <polygon points="104,36 118,8 90,22" fill="#5c4033"/>
+
+                        <!-- 兩側深色面罩 -->
+                        <path d="M 28 50 Q 50 32 70 45 Q 50 68 28 50 Z" fill="#5c4033" opacity="0.9"/>
+                        <path d="M 112 50 Q 90 32 70 45 Q 90 68 112 50 Z" fill="#5c4033" opacity="0.9"/>
                         
-                        <!-- 招牌深色面罩 (V字對稱) -->
-                        <path d="M 35 45 Q 60 30 85 45 Q 95 75 60 95 Q 25 75 35 45 Z" fill="#5c4033" opacity="0.85"/>
-                        <path d="M 50 35 Q 60 25 70 35 Q 75 60 60 75 Q 45 60 50 35 Z" fill="#fdfbf7"/>
-                        
-                        <!-- 湛藍色大眼 -->
-                        <ellipse cx="43" cy="58" rx="7" ry="8" fill="#4a90e2" stroke="#ffffff" stroke-width="1.5"/>
-                        <circle cx="45" cy="56" r="2.5" fill="#ffffff"/>
-                        <ellipse cx="77" cy="58" rx="7" ry="8" fill="#4a90e2" stroke="#ffffff" stroke-width="1.5"/>
-                        <circle cx="75" cy="56" r="2.5" fill="#ffffff"/>
-                        
+                        <!-- 額頭經典白色倒V/火焰標記 -->
+                        <path d="M 61 32 Q 70 24 79 32 Q 74 58 70 62 Q 66 58 61 32 Z" fill="#ffffff"/>
+
+                        <!-- 水汪汪湛藍色大眼 -->
+                        <ellipse cx="50" cy="56" rx="8" ry="9" fill="#4a90e2" stroke="#ffffff" stroke-width="1.5"/>
+                        <circle cx="52" cy="54" r="2.5" fill="#ffffff"/>
+                        <ellipse cx="90" cy="56" rx="8" ry="9" fill="#4a90e2" stroke="#ffffff" stroke-width="1.5"/>
+                        <circle cx="88" cy="54" r="2.5" fill="#ffffff"/>
+
                         <!-- 粉嫩小鼻子與可愛嘴巴 -->
-                        <polygon points="57,68 63,68 60,72" fill="#d48364"/>
-                        <path d="M 54 75 Q 60 80 66 75" fill="none" stroke="#4a4036" stroke-width="2" stroke-linecap="round"/>
+                        <polygon points="67,64 73,64 70,68" fill="#d48364"/>
+                        <path d="M 64 71 Q 70 76 76 71" fill="none" stroke="#4a4036" stroke-width="2" stroke-linecap="round"/>
+
+                        <!-- 仿照照片：趴在白色容器邊緣的下半部遮擋 -->
+                        <rect x="20" y="80" width="100" height="25" rx="6" fill="#ffffff" stroke="#e3b78f" stroke-width="2"/>
                         
                         <!-- 飄動小音符 -->
-                        <text x="95" y="25" font-size="16" fill="#e07a5f" font-weight="bold">♪ ♫</text>
+                        <text x="112" y="22" font-size="16" fill="#e07a5f" font-weight="bold">♪ ♫</text>
                     </svg>
                 </div>
-                <div id="catLabelText" style="font-weight: bold; color: #6b5b4e; font-size: 14px; margin-top: 5px;"></div>
+                <div id="catLabelText" style="font-weight: bold; color: #6b5b4e; font-size: 14px; margin-top: 2px;"></div>
             </div>
 
             <!-- 💡 0% 到 100% 時間進度條 -->
@@ -234,7 +234,6 @@
             
             <div class="song-reveal-box">
                 <div style="font-size: 14px; color: #a39589; margin-bottom: 8px;">🎵 平民聽的歌：<br><span id="resultCivilianSong" style="color: #7a6a5d; font-weight: bold; font-size: 16px;">--</span></div>
-                <!-- 💡 臥底聽的歌顏色與平民一致 -->
                 <div style="font-size: 14px; color: #a39589;">🎧 臥底聽的歌：<br><span id="resultUndercoverSong" style="color: #7a6a5d; font-weight: bold; font-size: 16px;">--</span></div>
             </div>
 
@@ -294,7 +293,7 @@
                 <option value="K-POP">K-POP</option>
                 <option value="動漫神曲">動漫神曲</option>
                 <option value="流行英語">流行英語</option>
-                <option value="混合隨機" selected>混合隨機</option>
+                <option value="小朋友才選擇" selected>小朋友才選擇</option>
             </select>
             <div class="modal-btns">
                 <button class="btn-secondary" onclick="document.getElementById('settingsModal').style.display='none'">取消</button>
