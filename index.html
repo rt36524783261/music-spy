@@ -28,24 +28,40 @@
         .btn-outline:hover { background-color: #e07a5f; color: white; }
         .btn-setting { border: 2px solid #9cbca7; color: #9cbca7; }
         .btn-setting:hover { background-color: #9cbca7; color: white; }
+        .btn-rank { border: 2px solid #cf9366; color: #cf9366; }
+        .btn-rank:hover { background-color: #cf9366; color: white; }
         
         .btn-kick { background-color: #e07a5f; color: white; border: none; padding: 4px 10px; font-size: 12px; border-radius: 8px; margin-left: 10px; cursor: pointer; box-shadow: none; }
         .btn-kick:hover { background-color: #c9654b; transform: none; }
 
-        .room-header { border-bottom: 2px dashed #f2ede4; padding-bottom: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;}
-        #displayRoomId { font-size: 24px; font-weight: 900; color: #cf9366; margin: 0; }
+        /* 按鈕容器：自動換行、置中，防止小手機被撐爆 */
+        .header-btns { display: flex; justify-content: center; flex-wrap: wrap; gap: 5px; }
+
+        .room-header { border-bottom: 2px dashed #f2ede4; padding-bottom: 15px; margin-bottom: 20px; display: flex; flex-direction: column; align-items: center;}
+        #displayRoomId { font-size: 24px; font-weight: 900; color: #cf9366; margin: 0 0 10px 0; }
         .room-settings-info { width: 100%; font-size: 14px; color: #a39589; margin-top: 10px; font-weight: bold; }
         
-        .player-list-item { font-size: 16px; font-weight: bold; padding: 12px 15px; margin: 8px 0; background: #faf8f5; border-radius: 12px; color: #7a6a5d; border: 1px solid #f2ede4; display: flex; justify-content: space-between; align-items: center; }
+        .player-list-item { font-size: 16px; font-weight: bold; padding: 12px 15px; margin: 8px 0; background: #faf8f5; border-radius: 12px; color: #7a6a5d; border: 1px solid #f2ede4; display: flex; justify-content: space-between; align-items: center; overflow: hidden; }
+        
+        .player-info-left { display: flex; align-items: center; flex: 1; min-width: 0; margin-right: 10px; }
+        .player-name-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+        .player-status-right { white-space: nowrap; flex-shrink: 0; display: flex; align-items: center; }
 
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(74, 64, 54, 0.6); z-index: 999; justify-content: center; align-items: center; backdrop-filter: blur(3px); }
-        .modal-box { background: white; padding: 30px; border-radius: 20px; width: 85%; max-width: 350px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); text-align: center; }
+        .modal-box { background: white; padding: 30px; border-radius: 20px; width: 85%; max-width: 350px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); text-align: center; max-height: 80vh; display: flex; flex-direction: column; }
         .modal-msg { margin-bottom: 20px; font-size: 18px; font-weight: bold; color: #6b5b4e; }
-        .modal-btns { display: flex; justify-content: center; gap: 15px; }
+        .modal-btns { display: flex; justify-content: center; gap: 15px; margin-top: 20px; }
+
+        /* 排行榜專屬樣式 */
+        .rank-list-container { overflow-y: auto; flex: 1; text-align: left; }
+        .rank-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #f2ede4; font-size: 16px; font-weight: bold; color: #7a6a5d; }
+        .rank-item:last-child { border-bottom: none; }
+        .rank-name-box { flex: 1; min-width: 0; margin-right: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+        .rank-score-box { flex-shrink: 0; color: #cf9366; font-size: 18px; }
 
         #countdownNumber, #voteTimer { font-size: 80px; font-weight: 900; color: #e07a5f; text-shadow: 2px 4px 10px rgba(224, 122, 95, 0.2); margin: 20px 0; }
         .vote-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
-        .vote-btn { padding: 15px; background: #faf8f5; border: 2px solid #f2ede4; border-radius: 12px; font-size: 16px; font-weight: bold; color: #7a6a5d; cursor: pointer; transition: 0.2s; }
+        .vote-btn { padding: 15px; background: #faf8f5; border: 2px solid #f2ede4; border-radius: 12px; font-size: 16px; font-weight: bold; color: #7a6a5d; cursor: pointer; transition: 0.2s; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .vote-btn.selected { background: #e07a5f; color: white; border-color: #c9654b; transform: scale(1.05); }
 
         #resultTitle { font-size: 32px; font-weight: 900; margin-bottom: 15px; }
@@ -55,6 +71,15 @@
             padding: 15px; margin-bottom: 15px; text-align: left;
         }
         .eliminated-name { font-weight: bold; }
+
+        /* 浮動的黑色小提示框 (Tooltip) */
+        #toast {
+            visibility: hidden; min-width: 150px; max-width: 80%; background-color: #333; color: #fff;
+            text-align: center; border-radius: 8px; padding: 10px; position: fixed; z-index: 1000;
+            left: 50%; bottom: 30px; transform: translateX(-50%); font-size: 14px;
+            opacity: 0; transition: opacity 0.3s, bottom 0.3s; word-wrap: break-word; font-weight: bold;
+        }
+        #toast.show { visibility: visible; opacity: 1; bottom: 50px; }
     </style>
 </head>
 <body>
@@ -77,7 +102,8 @@
         <div class="content-wrapper">
             <div class="room-header">
                 <h2 id="displayRoomId">房間：</h2>
-                <div>
+                <div class="header-btns">
+                    <button class="btn-outline btn-rank" onclick="openRankModal()">玩家排行</button>
                     <button id="settingBtn" class="btn-outline btn-setting" style="display: none;" onclick="openSettings()">遊戲設定</button>
                     <button id="leaveBtn" class="btn-outline" onclick="leaveRoom()">退出房間</button>
                 </div>
@@ -132,8 +158,22 @@
         </div>
     </div>
 
-    <div id="customModal" class="modal-overlay">
+    <!-- 玩家排行榜彈窗 -->
+    <div id="rankModal" class="modal-overlay">
         <div class="modal-box">
+            <div class="modal-msg">🏆 玩家排行榜</div>
+            <div id="rankListContainer" class="rank-list-container">
+                <!-- 排行榜內容會由 JS 動態生成 -->
+            </div>
+            <div class="modal-btns">
+                <button class="btn-secondary" onclick="document.getElementById('rankModal').style.display='none'">關閉</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 通用確認與警告彈窗 -->
+    <div id="customModal" class="modal-overlay">
+        <div class="modal-box" style="display:block;">
             <div id="modalMsg" class="modal-msg"></div>
             <div class="modal-btns">
                 <button id="modalBtnYes" class="btn-danger">是</button>
@@ -144,7 +184,7 @@
     </div>
 
     <div id="settingsModal" class="modal-overlay">
-        <div class="modal-box">
+        <div class="modal-box" style="display:block;">
             <div class="modal-msg">房間設定</div>
             <span class="label">播放秒數</span>
             <select id="selectDuration">
@@ -168,6 +208,9 @@
         </div>
     </div>
 
+    <!-- 全名提示浮動框 -->
+    <div id="toast"></div>
+
     <audio id="bgm" preload="auto"></audio>
 
     <script>
@@ -180,6 +223,14 @@
         let voteTimer = null;
         let myVoteTarget = null;
         let globalPlayers = {}; 
+        let globalScores = {}; // 儲存分數供排行榜使用
+
+        function showToast(text) {
+            const toast = document.getElementById("toast");
+            toast.innerText = text;
+            toast.className = "show";
+            setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 2500);
+        }
 
         function showConfirm(msg, onYes) {
             document.getElementById('modalMsg').innerText = msg;
@@ -234,6 +285,31 @@
             document.getElementById('settingsModal').style.display = 'none';
         }
 
+        // 開啟排行榜彈窗，並繪製列表
+        function openRankModal() {
+            const container = document.getElementById('rankListContainer');
+            container.innerHTML = '';
+            
+            const sortedPlayerIds = Object.keys(globalPlayers).sort((a, b) => {
+                const scoreA = globalScores[a] || 0;
+                const scoreB = globalScores[b] || 0;
+                return scoreB - scoreA; 
+            });
+
+            sortedPlayerIds.forEach(uid => {
+                const p = globalPlayers[uid];
+                const score = globalScores[uid] || 0;
+                // 排行榜內的名字也加上 click 顯示全名的功能
+                container.innerHTML += `
+                    <div class="rank-item">
+                        <div class="rank-name-box" onclick="showToast('${p.name}')">${p.name}</div>
+                        <div class="rank-score-box">${score} 分</div>
+                    </div>
+                `;
+            });
+            document.getElementById('rankModal').style.display = 'flex';
+        }
+
         socket.on('error_msg', showAlert);
         
         socket.on('room_destroyed', () => { 
@@ -260,14 +336,16 @@
             let allReady = true; 
             let index = 1; 
             globalPlayers = roomState.players; 
+            globalScores = roomState.scores; 
             
             const isHost = (roomState.hostId === myUserId);
             document.getElementById('leaveBtn').innerText = isHost ? '解散房間' : '退出房間';
             document.getElementById('settingBtn').style.display = isHost ? 'inline-block' : 'none';
-            
-            for (const uid in roomState.players) {
+
+            Object.keys(roomState.players).forEach(uid => {
                 const p = roomState.players[uid];
-                const hostText = (uid === roomState.hostId) ? '(房主)' : '';
+                
+                const hostText = (uid === roomState.hostId) ? '<span style="font-size: 12px; color: #cf9366; margin-left: 4px;">(房主)</span>' : '';
                 let statusText = p.status !== 'ONLINE' ? '<span style="color: #e07a5f;">斷線中</span>' : 
                                  p.isReady ? '<span style="color: #9cbca7;">準備完成</span>' : '<span style="color: #c7bcae;">準備中</span>';
                 if (p.status === 'ONLINE' && !p.isReady) allReady = false; 
@@ -277,14 +355,21 @@
                     kickButtonHtml = `<button class="btn-kick" onclick="kickPlayer('${uid}')">踢出</button>`;
                 }
 
+                // 綁定 onclick="showToast('${p.name}')" 讓點擊可以看全名
                 listDiv.innerHTML += `
                     <div class="player-list-item">
-                        <span>${index} - ${p.name}${hostText}</span>
-                        <div>${statusText} ${kickButtonHtml}</div>
+                        <div class="player-info-left">
+                            <span style="margin-right: 5px; flex-shrink: 0;">${index} -</span>
+                            <span class="player-name-text" onclick="showToast('${p.name}')">${p.name}</span>
+                            <div style="flex-shrink: 0;">${hostText}</div>
+                        </div>
+                        <div class="player-status-right">
+                            ${statusText} ${kickButtonHtml}
+                        </div>
                     </div>
                 `;
                 index++;
-            }
+            });
 
             document.getElementById('startBtn').style.display = (isHost && allReady && Object.keys(roomState.players).length > 1) ? 'inline-block' : 'none';
         });
@@ -348,6 +433,7 @@
                 const btn = document.createElement('button');
                 btn.className = 'vote-btn';
                 btn.innerText = globalPlayers[uid].name;
+                // 投票按鈕也支援點擊顯示全名 (避免誤觸投票，這裡先保留原本功能，如果字被卡掉就靠排版解決)
                 btn.onclick = () => handleVoteClick(uid, btn);
                 grid.appendChild(btn);
             }
