@@ -25,7 +25,6 @@
         .btn-danger { background-color: #e07a5f; box-shadow: 0 4px 12px rgba(224, 122, 95, 0.3); }
         .btn-danger:hover { background-color: #c9654b; }
         
-        /* 💡 新增未達條件灰暗不可按的樣式 */
         .btn-disabled { background-color: #d3c9c1 !important; color: #ffffff !important; box-shadow: none !important; cursor: not-allowed !important; transform: none !important; }
         
         .btn-outline { background-color: transparent; border: 2px solid #e07a5f; color: #e07a5f; box-shadow: none; font-size: 14px; padding: 6px 12px;}
@@ -110,7 +109,6 @@
             </div>
             <div id="playerList" style="margin: 20px 0; min-height: 150px;"></div>
             
-            <!-- 💡 將準備與開始按鈕並排放置 -->
             <div style="margin-top: 30px; display: flex; justify-content: center; gap: 10px; align-items: center;">
                 <button id="readyBtn" onclick="toggleReady()">準備 / 取消</button>
                 <button id="startBtn" class="btn-danger btn-disabled" style="display: none;" disabled onclick="startGame()">開始遊戲</button>
@@ -205,16 +203,15 @@
 
     <script>
         const socket = io();
-        let myUserId = localStorage.getItem('music_spy_uid') || ('USER_' + Math.random().toString(36).substr(2, 9));
-        localStorage.setItem('music_spy_uid', myUserId);
-        document.getElementById('nameInput').value = localStorage.getItem('music_spy_name') || '';
+        let myUserId = sessionStorage.getItem('music_spy_uid') || ('USER_' + Math.random().toString(36).substr(2, 9));
+        sessionStorage.setItem('music_spy_uid', myUserId);
+        document.getElementById('nameInput').value = sessionStorage.getItem('music_spy_name') || '';
         let currentRoomId = null;
         let globalTimerInterval = null; 
         let myVoteTarget = null;
         let globalPlayers = {}; 
         let globalScores = {}; 
 
-        // 💡 雙向監視機制
         document.addEventListener('visibilitychange', () => {
             if (document.hidden && currentRoomId) {
                 socket.emit('go_background', { roomId: currentRoomId, userId: myUserId });
@@ -259,13 +256,20 @@
             });
         }
 
-        function startGlobalTimer(endTime, elementId) {
+        // 💡 修正 2：時間歸零時精準暫停音樂
+        function startGlobalTimer(endTime, elementId, isPlayingPhase = false) {
             clearInterval(globalTimerInterval);
             const el = document.getElementById(elementId);
+            const audio = document.getElementById('bgm');
             
             const updateTimer = () => {
                 let remain = Math.ceil((endTime - Date.now()) / 1000);
-                if (remain <= 0) remain = 0;
+                if (remain <= 0) {
+                    remain = 0;
+                    if (isPlayingPhase && audio && !audio.paused) {
+                        audio.pause();
+                    }
+                }
                 el.innerText = remain;
             };
             updateTimer();
@@ -275,7 +279,7 @@
         function getMyName() {
             let name = document.getElementById('nameInput').value.trim();
             if (name === "") name = "天飛巴庫";
-            localStorage.setItem('music_spy_name', name);
+            sessionStorage.setItem('music_spy_name', name);
             return name;
         }
 
@@ -345,12 +349,11 @@
             globalPlayers = roomState.players; 
             globalScores = roomState.scores; 
 
-            if (document.getElementById('resultScreen').style.display === 'block') {
-                if (roomState.state === 'LOADING') {
-                    // 若房主新開一局，離開結算
-                } else {
-                    return; 
-                }
+            const isResult = document.getElementById('resultScreen').style.display === 'block';
+            const isPlayingOrVoting = document.getElementById('playingScreen').style.display === 'block' || document.getElementById('votingScreen').style.display === 'block';
+
+            if (isResult && roomState.state !== 'LOADING') {
+                return; 
             }
 
             if (roomState.state === 'PLAYING') {
@@ -359,16 +362,28 @@
                 document.getElementById('playStatusDesc').innerText = '找出那個音樂不一樣的騙子';
                 document.getElementById('downloadList').style.display = 'none';
                 document.getElementById('countdownNumber').style.display = 'block';
-                startGlobalTimer(roomState.phaseEndTime, 'countdownNumber');
+                startGlobalTimer(roomState.phaseEndTime, 'countdownNumber', true);
                 return;
             } else if (roomState.state === 'VOTING') {
                 switchView('votingScreen');
                 renderVoteGrid(roomState.players);
-                startGlobalTimer(roomState.phaseEndTime, 'voteTimer');
+                startGlobalTimer(roomState.phaseEndTime, 'voteTimer', false);
                 return;
+            } else if (roomState.state === 'LOBBY') {
+                // 💡 修正 3：防呆保護網，卡在 0 秒的人會因為 LOBBY 狀態而強制跳轉
+                if (isPlayingOrVoting) {
+                    if (roomState.lastResult) {
+                        renderResultScreen(roomState.lastResult);
+                        showToast('連線恢復，已為你同步結算畫面');
+                        return;
+                    } else {
+                        switchView('roomScreen');
+                    }
+                } else if (!isResult) {
+                    switchView('roomScreen');
+                }
             }
 
-            // LOBBY 或 LOADING
             document.getElementById('displayRoomId').innerText = currentRoomId;
             document.getElementById('displaySettings').innerText = `設定：${roomState.settings.duration}秒 | ${roomState.settings.category}`;
             document.getElementById('selectDuration').value = roomState.settings.duration;
@@ -386,9 +401,12 @@
             Object.keys(roomState.players).forEach(uid => {
                 const p = roomState.players[uid];
                 const hostText = (uid === roomState.hostId) ? '<span style="font-size: 12px; color: #cf9366; margin-left: 4px;">(房主)</span>' : '';
-                let statusText = p.status !== 'ONLINE' ? '<span style="color: #e07a5f;">離線中</span>' : 
-                                 p.isReady ? '<span style="color: #9cbca7;">準備完成</span>' : '<span style="color: #c7bcae;">準備中</span>';
-                if (p.status === 'ONLINE' && !p.isReady) allReady = false; 
+                
+                // 💡 修正 1：拔除刺眼的紅色離線標籤，直接以 isReady 決定狀態顯示
+                let statusText = p.isReady ? '<span style="color: #9cbca7;">準備完成</span>' : '<span style="color: #c7bcae;">準備中</span>';
+                
+                // 只有全體玩家（包含斷線重連者）都是準備完成，allReady 才會是 true
+                if (!p.isReady) allReady = false; 
 
                 let kickButtonHtml = (isHost && uid !== myUserId) ? `<button class="btn-kick" onclick="kickPlayer('${uid}')">踢出</button>` : '';
 
@@ -404,7 +422,6 @@
                 index++;
             });
 
-            // 💡 房主按鈕控制邏輯
             const startBtn = document.getElementById('startBtn');
             if (isHost) {
                 startBtn.style.display = 'inline-block';
@@ -504,31 +521,33 @@
             socket.emit('submit_vote', { roomId: currentRoomId, userId: myUserId, targetId: myVoteTarget });
         }
 
-        socket.on('GAME_RESULT', ({ winner, eliminatedData, undercoverName, civilianSong, undercoverSong }) => {
+        function renderResultScreen(data) {
             clearInterval(globalTimerInterval);
             myVoteTarget = null; 
             
             switchView('resultScreen');
             
             const title = document.getElementById('resultTitle');
-            title.innerText = winner;
-            title.style.color = (winner === '平民勝利') ? '#9cbca7' : '#e07a5f';
+            title.innerText = data.winner;
+            title.style.color = (data.winner === '平民勝利') ? '#9cbca7' : '#e07a5f';
             
-            document.getElementById('resultSpy').innerText = undercoverName;
-            document.getElementById('resultCivilianSong').innerText = civilianSong;
-            document.getElementById('resultUndercoverSong').innerText = undercoverSong;
+            document.getElementById('resultSpy').innerText = data.undercoverName;
+            document.getElementById('resultCivilianSong').innerText = data.civilianSong;
+            document.getElementById('resultUndercoverSong').innerText = data.undercoverSong;
 
             let eliminatedHtml = '';
-            if (!eliminatedData || eliminatedData.length === 0) {
+            if (!data.eliminatedData || data.eliminatedData.length === 0) {
                 eliminatedHtml = '<span style="color: #a39589;">無人被淘汰</span>';
             } else {
-                eliminatedHtml = eliminatedData.map(p => {
+                eliminatedHtml = data.eliminatedData.map(p => {
                     const fontColor = p.isUndercover ? '#e07a5f' : '#9cbca7'; 
                     return `<span class="eliminated-name" style="color: ${fontColor};">${p.name}</span>`;
                 }).join('<span style="color: #7a6a5d;">, </span>');
             }
             document.getElementById('resultEliminated').innerHTML = eliminatedHtml;
-        });
+        }
+
+        socket.on('GAME_RESULT', renderResultScreen);
     </script>
 </body>
 </html>

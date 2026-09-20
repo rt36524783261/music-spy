@@ -70,19 +70,16 @@ async function fetchAppleMusicPreview(keyword) {
 
 app.get('/', (req, res) => { res.sendFile(__dirname + '/index.html'); });
 
-// 💡 專屬廣播函式：過濾掉 Node.js 的 Timer 物件，防止 Socket.io 序列化崩潰
 function broadcastRoomState(roomId) {
   const room = rooms[roomId];
   if (!room) return;
 
-  // 淺拷貝房間狀態，並挖掉計時器
   const safeRoom = { ...room };
   delete safeRoom.playTimeout;
   delete safeRoom.votingTimeout;
   delete safeRoom.globalLoadingTimeout;
   delete safeRoom.singlePlayerIdleTimer;
   
-  // 深層拷貝玩家狀態
   safeRoom.players = {};
   for (const uid in room.players) {
     safeRoom.players[uid] = { ...room.players[uid] };
@@ -92,7 +89,6 @@ function broadcastRoomState(roomId) {
   io.to(roomId).emit('room_state_update', safeRoom);
 }
 
-// 💡 管理伺服器休眠機制的單人閒置計時器
 function resetSinglePlayerIdleTimer(roomId) {
   const room = rooms[roomId];
   if (!room) return;
@@ -110,7 +106,6 @@ function resetSinglePlayerIdleTimer(roomId) {
   }
 }
 
-// 💡 統一的玩家移除與轉移房主機制
 function removePlayer(roomId, userId, kickMsg = null) {
   const room = rooms[roomId];
   if (!room || !room.players[userId]) return;
@@ -125,7 +120,6 @@ function removePlayer(roomId, userId, kickMsg = null) {
 
   const remaining = Object.keys(room.players);
   if (remaining.length === 0) {
-    // 房間徹底空了，清理所有殘留的計時器防止 Memory Leak
     if (room.singlePlayerIdleTimer) clearTimeout(room.singlePlayerIdleTimer);
     if (room.playTimeout) clearTimeout(room.playTimeout);
     if (room.votingTimeout) clearTimeout(room.votingTimeout);
@@ -140,7 +134,6 @@ function removePlayer(roomId, userId, kickMsg = null) {
   }
 }
 
-// 💡 統一的玩家離線(切畫面)處理器
 function handlePlayerOffline(roomId, userId) {
   const room = rooms[roomId];
   if (!room || !room.players[userId]) return;
@@ -156,7 +149,6 @@ function handlePlayerOffline(roomId, userId) {
   resetSinglePlayerIdleTimer(roomId);
 }
 
-// 💡 統一的玩家回歸處理器
 function handlePlayerOnline(roomId, userId, socketId) {
   const room = rooms[roomId];
   if (!room || !room.players[userId]) return false; 
@@ -203,8 +195,6 @@ function checkDownloadProgress(roomId) {
 }
 
 io.on('connection', (socket) => {
-  console.log(`連線建立: ${socket.id}`);
-
   socket.on('create_room', ({ userId, userName }) => {
     const finalName = userName || '天飛巴庫';
     const roomId = Math.floor(1000 + Math.random() * 9000).toString(); 
@@ -214,7 +204,7 @@ io.on('connection', (socket) => {
       settings: { duration: 15, category: '混合隨機' }, 
       undercoverId: null, votes: {},
       civilianSong: '', undercoverSong: '',
-      playedSongs: [], scores: {},
+      playedSongs: [], scores: {}, lastResult: null, // 💡 新增 lastResult 記憶最後一次結算狀態
       phaseEndTime: null, playTimeout: null, votingTimeout: null, globalLoadingTimeout: null,
       singlePlayerIdleTimer: null
     };
@@ -352,7 +342,6 @@ io.on('connection', (socket) => {
         io.to(room.players[uid].socketId).emit('PRELOAD_MUSIC', targetUrl);
       });
 
-      // 💡 下載階段 10 秒生死防呆
       room.globalLoadingTimeout = setTimeout(() => {
         const currentRoom = rooms[roomId];
         if (currentRoom && currentRoom.state === 'LOADING') {
@@ -434,13 +423,11 @@ io.on('connection', (socket) => {
     
     const undercoverName = room.players[room.undercoverId]?.name || '未知';
 
-    io.to(roomId).emit('GAME_RESULT', { 
-      winner, 
-      eliminatedData, 
-      undercoverName,
-      civilianSong: room.civilianSong,
-      undercoverSong: room.undercoverSong
-    });
+    // 💡 記憶這局結算結果
+    const resultData = { winner, eliminatedData, undercoverName, civilianSong: room.civilianSong, undercoverSong: room.undercoverSong };
+    room.lastResult = resultData;
+
+    io.to(roomId).emit('GAME_RESULT', resultData);
 
     Object.values(room.players).forEach(p => p.isReady = false);
     broadcastRoomState(roomId);
