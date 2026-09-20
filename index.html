@@ -138,6 +138,7 @@
         </div>
     </div>
 
+    <!-- 💡 結算畫面：清楚顯示勝利、臥底、歌曲、淘汰者與返回房間按鈕 -->
     <div id="resultScreen" class="container" style="display: none;">
         <div class="content-wrapper">
             <h1 id="resultTitle">--</h1>
@@ -148,7 +149,7 @@
                     🎵 平民聽的歌：<br>
                     <span id="resultCivilianSong" style="color: #7a6a5d; font-weight: bold; font-size: 16px;">--</span>
                 </div>
-                <div style="font-size: 14px; color: #a39589;">
+                <div style="font-size: 14px; color: #a39589; margin-top: 10px;">
                     🎧 臥底聽的歌：<br>
                     <span id="resultUndercoverSong" style="color: #cf9366; font-weight: bold; font-size: 16px;">--</span>
                 </div>
@@ -158,7 +159,7 @@
                 被淘汰的玩家：<br><span id="resultEliminated">--</span>
             </p>
 
-            <button class="btn-secondary" style="width: 100%;" onclick="switchView('roomScreen')">返回房間</button>
+            <button class="btn-secondary" style="width: 100%;" onclick="returnToLobby()">返回房間</button>
         </div>
     </div>
 
@@ -218,18 +219,16 @@
         localStorage.setItem('music_spy_uid', myUserId);
         document.getElementById('nameInput').value = localStorage.getItem('music_spy_name') || '';
         let currentRoomId = null;
-        let playTimer = null;
-        let voteTimer = null;
+        
+        let globalTimerInterval = null; 
         let myVoteTarget = null;
         let globalPlayers = {}; 
         let globalScores = {}; 
 
         document.addEventListener('visibilitychange', () => {
             if (document.hidden && currentRoomId) {
-                console.log("切換到背景，強制判定離線...");
                 socket.emit('go_background', { roomId: currentRoomId, userId: myUserId });
             } else if (!document.hidden && currentRoomId) {
-                console.log("切回畫面，發送 wake_up 強制喚醒...");
                 socket.emit('wake_up', { roomId: currentRoomId, userId: myUserId });
             }
         });
@@ -278,6 +277,7 @@
                 btn.className = 'vote-btn';
                 btn.innerText = players[uid].name;
                 btn.onclick = () => handleVoteClick(uid, btn);
+                if (myVoteTarget === uid) btn.classList.add('selected'); 
                 grid.appendChild(btn);
             }
         }
@@ -302,6 +302,10 @@
                 currentRoomId = null;
                 switchView('homeScreen');
             });
+        }
+
+        function returnToLobby() {
+            switchView('roomScreen');
         }
 
         function openSettings() { document.getElementById('settingsModal').style.display = 'flex'; }
@@ -338,6 +342,21 @@
             document.getElementById('rankModal').style.display = 'flex';
         }
 
+        function startGlobalTimer(endTime, elementId) {
+            clearInterval(globalTimerInterval);
+            const el = document.getElementById(elementId);
+            
+            const updateTimer = () => {
+                let remain = Math.ceil((endTime - Date.now()) / 1000);
+                if (remain < 0) remain = 0;
+                el.innerText = remain;
+                if (remain <= 0) clearInterval(globalTimerInterval);
+            };
+            
+            updateTimer(); 
+            globalTimerInterval = setInterval(updateTimer, 200); 
+        }
+
         socket.on('error_msg', showAlert);
         
         socket.on('room_destroyed', () => { 
@@ -355,30 +374,47 @@
             globalPlayers = roomState.players; 
             globalScores = roomState.scores;
 
-            // 💡 終極狀態機同步：不管你剛剛卡去哪裡，伺服器現在說在哪，你的畫面就切去哪！
             if (roomState.state === 'LOBBY') {
                 if (document.getElementById('playingScreen').style.display === 'block' || document.getElementById('votingScreen').style.display === 'block') {
-                    showToast("你剛才錯過了結算畫面！");
                     switchView('roomScreen');
                 }
+            } else if (roomState.state === 'LOADING') {
+                switchView('playingScreen');
+                document.getElementById('playStatusTitle').innerText = '音檔下載中...';
+                document.getElementById('playStatusDesc').innerText = '請等待所有人就緒';
+                document.getElementById('countdownNumber').style.display = 'none';
+                document.getElementById('downloadList').style.display = 'block';
+                
+                const dlList = document.getElementById('downloadList');
+                dlList.innerHTML = '';
+                for(let uid in roomState.players) {
+                    const isReadyText = roomState.players[uid].isLoaded ? '<span style="color:#9cbca7;">已就緒 ✅</span>' : '<span style="color:#e07a5f;">下載中...</span>';
+                    dlList.innerHTML += `
+                        <div class="dl-item">
+                            <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 10px;">${roomState.players[uid].name}</span>
+                            <span style="flex-shrink: 0;">${isReadyText}</span>
+                        </div>`;
+                }
+                return; 
             } else if (roomState.state === 'PLAYING') {
-                if (document.getElementById('playingScreen').style.display !== 'block') {
-                    switchView('playingScreen');
-                }
-                if (roomState.isPlayingStarted) {
-                    document.getElementById('downloadList').style.display = 'none';
-                    document.getElementById('countdownNumber').style.display = 'block';
-                }
-                return; // 如果在聽歌，就不更新底下的大廳畫面
+                switchView('playingScreen');
+                document.getElementById('playStatusTitle').innerText = '仔細聽！';
+                document.getElementById('playStatusDesc').innerText = '找出那個音樂不一樣的騙子';
+                document.getElementById('downloadList').style.display = 'none';
+                document.getElementById('countdownNumber').style.display = 'block';
+                
+                startGlobalTimer(roomState.phaseEndTime, 'countdownNumber');
+                return;
             } else if (roomState.state === 'VOTING') {
-                if (document.getElementById('votingScreen').style.display !== 'block') {
-                    switchView('votingScreen');
-                    renderVoteGrid(roomState.players);
-                }
-                return; // 如果在投票，也不更新大廳畫面
+                switchView('votingScreen');
+                renderVoteGrid(roomState.players);
+                startGlobalTimer(roomState.phaseEndTime, 'voteTimer');
+                return;
+            } else if (roomState.state === 'RESULT') {
+                // 如果在結算狀態，確保畫面在 resultScreen
+                return;
             }
 
-            // 大廳畫面繪製邏輯
             document.getElementById('displayRoomId').innerText = '房間：' + currentRoomId;
             document.getElementById('displaySettings').innerText = `設定：${roomState.settings.duration}秒 | ${roomState.settings.category}`;
             document.getElementById('selectDuration').value = roomState.settings.duration;
@@ -441,77 +477,22 @@
             audio.play().then(() => { audio.pause(); }).catch(e => console.warn("音訊解鎖失敗"));
             socket.emit('toggle_ready', { roomId: currentRoomId, userId: myUserId });
         }
+        
         function startGame() { socket.emit('start_game', { roomId: currentRoomId, userId: myUserId }); }
-
-        socket.on('game_starting', () => {
-            switchView('playingScreen');
-            document.getElementById('playStatusTitle').innerText = '音檔下載中...';
-            document.getElementById('playStatusDesc').innerText = '請確保手機音量開啟';
-            document.getElementById('countdownNumber').style.display = 'none';
-            document.getElementById('downloadList').style.display = 'block';
-            
-            const dlList = document.getElementById('downloadList');
-            dlList.innerHTML = '';
-            for(let uid in globalPlayers) {
-                dlList.innerHTML += `
-                    <div class="dl-item" id="dl_${uid}">
-                        <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 10px;">${globalPlayers[uid].name}</span>
-                        <span style="color:#e07a5f; flex-shrink: 0;">下載中...</span>
-                    </div>`;
-            }
-        });
-
-        socket.on('PLAYER_LOADED', (uid) => {
-           const el = document.getElementById('dl_' + uid);
-           if(el && globalPlayers[uid]) {
-               el.innerHTML = `
-                    <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 10px;">${globalPlayers[uid].name}</span>
-                    <span style="color:#9cbca7; flex-shrink: 0;">已就緒 ✅</span>`;
-           }
-        });
 
         socket.on('PRELOAD_MUSIC', (url) => {
             const audio = document.getElementById('bgm');
             audio.src = url; audio.load();
             audio.oncanplaythrough = () => {
                 audio.oncanplaythrough = null; 
-                document.getElementById('playStatusTitle').innerText = '你已下載完成';
-                document.getElementById('playStatusDesc').innerText = '等待其他人載入...';
                 socket.emit('music_loaded', { roomId: currentRoomId, userId: myUserId });
             };
         });
 
-        socket.on('START_PLAYING', (duration) => {
-            document.getElementById('playStatusTitle').innerText = '仔細聽！';
-            document.getElementById('playStatusDesc').innerText = '找出那個音樂不一樣的騙子';
-            document.getElementById('downloadList').style.display = 'none'; 
-            document.getElementById('countdownNumber').style.display = 'block'; 
-            
+        socket.on('START_PLAYING_MUSIC', () => {
             const audio = document.getElementById('bgm');
             audio.currentTime = 0; 
             audio.play().catch(e => console.error(e));
-            
-            let timeLeft = duration;
-            document.getElementById('countdownNumber').innerText = timeLeft;
-            playTimer = setInterval(() => {
-                timeLeft--;
-                document.getElementById('countdownNumber').innerText = timeLeft;
-                if(timeLeft <= 0) { clearInterval(playTimer); audio.pause(); }
-            }, 1000);
-        });
-
-        socket.on('START_VOTING', () => {
-            switchView('votingScreen');
-            myVoteTarget = null;
-            renderVoteGrid(globalPlayers);
-
-            let vTime = 20; 
-            document.getElementById('voteTimer').innerText = vTime;
-            voteTimer = setInterval(() => {
-                vTime--;
-                document.getElementById('voteTimer').innerText = vTime;
-                if(vTime <= 0) clearInterval(voteTimer);
-            }, 1000);
         });
 
         function handleVoteClick(uid, btnElement) {
@@ -527,6 +508,9 @@
         }
 
         socket.on('GAME_RESULT', ({ winner, eliminatedData, undercoverName, civilianSong, undercoverSong }) => {
+            clearInterval(globalTimerInterval); 
+            myVoteTarget = null; 
+            
             switchView('resultScreen');
             
             const title = document.getElementById('resultTitle');
