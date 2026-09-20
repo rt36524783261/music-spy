@@ -80,7 +80,6 @@
         }
         #toast.show { visibility: visible; opacity: 1; bottom: 50px; }
 
-        /* 💡 新增：下載進度清單樣式 */
         #downloadList { margin-top: 20px; text-align: left; background: #faf8f5; border-radius: 12px; padding: 15px; border: 1px solid #f2ede4; max-height: 200px; overflow-y: auto; }
         .dl-item { font-weight: bold; color: #7a6a5d; margin: 8px 0; display: flex; justify-content: space-between; border-bottom: 1px dashed #eaddcc; padding-bottom: 5px;}
         .dl-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0;}
@@ -126,7 +125,6 @@
             <h1 id="playStatusTitle" style="color: #cf9366;">音檔下載中...</h1>
             <p id="playStatusDesc" style="color: #a39589; font-weight: bold;">請確保手機音量已開啟</p>
             <div id="countdownNumber" style="display: none;">--</div>
-            <!-- 💡 新增：下載進度追蹤列表 -->
             <div id="downloadList"></div>
         </div>
     </div>
@@ -140,7 +138,6 @@
         </div>
     </div>
 
-    <!-- 💡 新增：旁觀者專屬等候畫面 -->
     <div id="spectatorScreen" class="container" style="display: none;">
         <div class="content-wrapper">
             <h1 style="color: #a39589; font-size: 28px;">🚫 遊戲進行中</h1>
@@ -237,11 +234,14 @@
         let globalPlayers = {}; 
         let globalScores = {}; 
 
-        // 💡 監聽網頁被縮小到背景的瞬間：通報伺服器，啟動防護網
+        // 💡 升級版：雙向監聽器！隱藏時取消資格，切回來時強制發送 wake_up 喚醒！
         document.addEventListener('visibilitychange', () => {
             if (document.hidden && currentRoomId) {
-                console.log("切換到背景，正在強制判定離線與取消資格...");
+                console.log("切換到背景，強制判定離線...");
                 socket.emit('go_background', { roomId: currentRoomId, userId: myUserId });
+            } else if (!document.hidden && currentRoomId) {
+                console.log("切回畫面，發送 wake_up 強制喚醒...");
+                socket.emit('wake_up', { roomId: currentRoomId, userId: myUserId });
             }
         });
 
@@ -355,14 +355,12 @@
             globalPlayers = roomState.players; 
             globalScores = roomState.scores;
             
-            // 💡 旁觀者判定：如果遊戲已經開始，且你被標記為旁觀者，直接送你去懲罰區！
             const me = roomState.players[myUserId];
             if (roomState.state !== 'LOBBY' && me && me.isSpectator) {
                 switchView('spectatorScreen');
                 return;
             }
             
-            // 如果你不是旁觀者，且畫面已經在播放或投票，就不要蓋掉當前畫面
             if (document.getElementById('playingScreen').style.display === 'block' || document.getElementById('votingScreen').style.display === 'block') return; 
             
             document.getElementById('displayRoomId').innerText = '房間：' + currentRoomId;
@@ -372,7 +370,10 @@
 
             const listDiv = document.getElementById('playerList');
             listDiv.innerHTML = ''; 
+            
+            // 💡 姊姊特製的：最嚴格發車條件檢測
             let allReady = true; 
+            let allOnline = true; // 新增：檢測是否全體都在線上
             let index = 1; 
             
             const isHost = (roomState.hostId === myUserId);
@@ -385,7 +386,10 @@
                 const hostText = (uid === roomState.hostId) ? '<span style="font-size: 12px; color: #cf9366; margin-left: 4px;">(房主)</span>' : '';
                 let statusText = p.status !== 'ONLINE' ? '<span style="color: #e07a5f;">斷線中</span>' : 
                                  p.isReady ? '<span style="color: #9cbca7;">準備完成</span>' : '<span style="color: #c7bcae;">準備中</span>';
-                if (p.status === 'ONLINE' && !p.isReady) allReady = false; 
+                
+                // 💡 只要有任何人狀態不是 ONLINE，或是還沒準備，按鈕就不准出來！
+                if (p.status !== 'ONLINE') allOnline = false;
+                if (!p.isReady) allReady = false; 
 
                 let kickButtonHtml = '';
                 if (isHost && uid !== myUserId) {
@@ -407,7 +411,9 @@
                 index++;
             });
 
-            document.getElementById('startBtn').style.display = (isHost && allReady && Object.keys(roomState.players).length > 1) ? 'inline-block' : 'none';
+            // 💡 這裡加上了 allOnline 的條件判斷
+            document.getElementById('startBtn').style.display = 
+                (isHost && allReady && allOnline && Object.keys(roomState.players).length > 1) ? 'inline-block' : 'none';
         });
 
         function kickPlayer(targetUserId) {
@@ -431,7 +437,6 @@
             document.getElementById('countdownNumber').style.display = 'none';
             document.getElementById('downloadList').style.display = 'block';
             
-            // 💡 生成下載進度清單
             const dlList = document.getElementById('downloadList');
             dlList.innerHTML = '';
             for(let uid in globalPlayers) {
@@ -444,7 +449,6 @@
             }
         });
 
-        // 💡 接收伺服器廣播，更新個別玩家的下載狀態
         socket.on('PLAYER_LOADED', (uid) => {
            const el = document.getElementById('dl_' + uid);
            if(el && globalPlayers[uid]) {
@@ -468,8 +472,8 @@
         socket.on('START_PLAYING', (duration) => {
             document.getElementById('playStatusTitle').innerText = '仔細聽！';
             document.getElementById('playStatusDesc').innerText = '找出那個音樂不一樣的騙子';
-            document.getElementById('downloadList').style.display = 'none'; // 隱藏下載清單
-            document.getElementById('countdownNumber').style.display = 'block'; // 顯示倒數計時
+            document.getElementById('downloadList').style.display = 'none'; 
+            document.getElementById('countdownNumber').style.display = 'block'; 
             
             const audio = document.getElementById('bgm');
             audio.currentTime = 0; 
@@ -491,7 +495,7 @@
             const grid = document.getElementById('voteGrid');
             grid.innerHTML = '';
             for (const uid in globalPlayers) {
-                if(globalPlayers[uid].isSpectator) continue; // 不列出旁觀者給人投票
+                if(globalPlayers[uid].isSpectator) continue; 
                 
                 const btn = document.createElement('button');
                 btn.className = 'vote-btn';
