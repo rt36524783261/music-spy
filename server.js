@@ -3,9 +3,13 @@ const app = express();
 const http = require('http').createServer(app);
 const io = require('socket.io')(http);
 
+// 💡 終極防禦機制：防止伺服器因為未預期的錯誤而崩潰 (502 防護)
+process.on('uncaughtException', (err) => { console.error('未捕獲的錯誤:', err); });
+process.on('unhandledRejection', (reason) => { console.error('未處理的 Promise 拒絕:', reason); });
+
 const rooms = {}; 
 
-// 💡 請在此處貼上你原本完整的 POOLS 歌單物件
+// 💡 歌單讓你自由發揮，姊姊先留空殼幫你省版面，記得把你的完整題庫貼回來喔！
 const POOLS = {
   '華語流行': [
     "周杰倫 擱淺", "周杰倫 七里香", "周杰倫 晴天", "周杰倫 稻香", "周杰倫 夜曲",
@@ -81,7 +85,6 @@ function broadcastRoomState(roomId) {
   delete safeRoom.globalLoadingTimeout;
   delete safeRoom.singlePlayerIdleTimer;
   
-  // 💡 核心解法：由伺服器幫忙算出「剩餘毫秒數」，避開跨裝置時差
   if (room.phaseEndTime) {
     safeRoom.phaseRemaining = Math.max(0, room.phaseEndTime - Date.now());
   }
@@ -336,13 +339,17 @@ io.on('connection', (socket) => {
       ]);
 
       if (!civilianUrl || !undercoverUrl) {
-        room.state = 'LOBBY';
-        io.to(roomId).emit('error_msg', 'Apple API 抓歌失敗，請重新開始。');
-        resetSinglePlayerIdleTimer(roomId);
+        if(rooms[roomId]) {
+            rooms[roomId].state = 'LOBBY';
+            io.to(roomId).emit('error_msg', 'Apple API 抓歌失敗，請重新開始。');
+            resetSinglePlayerIdleTimer(roomId);
+        }
         return;
       }
 
+      // 💡 防禦 Crash 點：在等待 Apple API 的這幾秒內，如果有玩家手癢重整網頁，這裡才不會找不到人而引發 502
       playerIds.forEach(uid => {
+        if (!room.players[uid]) return; 
         room.players[uid].isLoaded = false;
         const targetUrl = (uid === room.undercoverId) ? undercoverUrl : civilianUrl;
         io.to(room.players[uid].socketId).emit('PRELOAD_MUSIC', targetUrl);
@@ -380,63 +387,67 @@ io.on('connection', (socket) => {
   });
 
   function calculateVotes(roomId) {
-    const room = rooms[roomId];
-    if (!room) return;
+    try {
+      const room = rooms[roomId];
+      if (!room) return;
 
-    room.state = 'LOBBY';
-    room.phaseEndTime = null;
+      room.state = 'LOBBY';
+      room.phaseEndTime = null;
 
-    let voteCounts = {};
-    for (let voter in room.votes) {
-      let target = room.votes[voter];
-      if (room.players[target]) { 
-        voteCounts[target] = (voteCounts[target] || 0) + 1;
-      }
-    }
-
-    let maxVotes = 0;
-    let eliminated = [];
-    for (let target in voteCounts) {
-      if (voteCounts[target] > maxVotes) {
-        maxVotes = voteCounts[target];
-        eliminated = [target];
-      } else if (voteCounts[target] === maxVotes) {
-        eliminated.push(target); 
-      }
-    }
-
-    if (maxVotes === 0) eliminated = [];
-
-    const undercoverDied = eliminated.includes(room.undercoverId);
-    const winner = undercoverDied ? '平民勝利' : '臥底勝利';
-    
-    if (winner === '平民勝利') {
-      Object.keys(room.players).forEach(uid => {
-        if (uid !== room.undercoverId) {
-          room.scores[uid] = (room.scores[uid] || 0) + 1;
+      let voteCounts = {};
+      for (let voter in room.votes) {
+        let target = room.votes[voter];
+        if (room.players[target]) { 
+          voteCounts[target] = (voteCounts[target] || 0) + 1;
         }
-      });
-    } else {
-      if (room.players[room.undercoverId]) {
-        room.scores[room.undercoverId] = (room.scores[room.undercoverId] || 0) + 3;
       }
+
+      let maxVotes = 0;
+      let eliminated = [];
+      for (let target in voteCounts) {
+        if (voteCounts[target] > maxVotes) {
+          maxVotes = voteCounts[target];
+          eliminated = [target];
+        } else if (voteCounts[target] === maxVotes) {
+          eliminated.push(target); 
+        }
+      }
+
+      if (maxVotes === 0) eliminated = [];
+
+      const undercoverDied = eliminated.includes(room.undercoverId);
+      const winner = undercoverDied ? '平民勝利' : '臥底勝利';
+      
+      if (winner === '平民勝利') {
+        Object.keys(room.players).forEach(uid => {
+          if (uid !== room.undercoverId) {
+            room.scores[uid] = (room.scores[uid] || 0) + 1;
+          }
+        });
+      } else {
+        if (room.players[room.undercoverId]) {
+          room.scores[room.undercoverId] = (room.scores[room.undercoverId] || 0) + 3;
+        }
+      }
+
+      const eliminatedData = eliminated.map(id => ({
+        name: room.players[id]?.name || '未知',
+        isUndercover: id === room.undercoverId
+      }));
+      
+      const undercoverName = room.players[room.undercoverId]?.name || '未知';
+
+      const resultData = { winner, eliminatedData, undercoverName, civilianSong: room.civilianSong, undercoverSong: room.undercoverSong };
+      room.lastResult = resultData;
+
+      io.to(roomId).emit('GAME_RESULT', resultData);
+
+      Object.values(room.players).forEach(p => p.isReady = false);
+      broadcastRoomState(roomId);
+      resetSinglePlayerIdleTimer(roomId);
+    } catch (err) {
+      console.error('結算時發生意外錯誤:', err);
     }
-
-    const eliminatedData = eliminated.map(id => ({
-      name: room.players[id]?.name || '未知',
-      isUndercover: id === room.undercoverId
-    }));
-    
-    const undercoverName = room.players[room.undercoverId]?.name || '未知';
-
-    const resultData = { winner, eliminatedData, undercoverName, civilianSong: room.civilianSong, undercoverSong: room.undercoverSong };
-    room.lastResult = resultData;
-
-    io.to(roomId).emit('GAME_RESULT', resultData);
-
-    Object.values(room.players).forEach(p => p.isReady = false);
-    broadcastRoomState(roomId);
-    resetSinglePlayerIdleTimer(roomId);
   }
 });
 

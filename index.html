@@ -256,7 +256,6 @@
             });
         }
 
-        // 💡 核心解法：直接接收「剩餘時間」，並加上自己的本地時間推算倒數，避開時鐘誤差
         function startGlobalTimer(remainingMs, elementId, isPlayingPhase = false) {
             clearInterval(globalTimerInterval);
             if (!remainingMs) return;
@@ -264,14 +263,13 @@
             const el = document.getElementById(elementId);
             const audio = document.getElementById('bgm');
             
-            // 以前端收到封包的當下時間，往後推算屬於「自己本地」的結束時間
             const localEndTime = Date.now() + remainingMs;
             
             const updateTimer = () => {
                 let remain = Math.ceil((localEndTime - Date.now()) / 1000);
                 if (remain <= 0) {
                     remain = 0;
-                    clearInterval(globalTimerInterval); // 歸零就停止計時器
+                    clearInterval(globalTimerInterval); 
                     if (isPlayingPhase && audio && !audio.paused) {
                         audio.pause();
                     }
@@ -368,13 +366,19 @@
                 document.getElementById('playStatusDesc').innerText = '找出那個音樂不一樣的騙子';
                 document.getElementById('downloadList').style.display = 'none';
                 document.getElementById('countdownNumber').style.display = 'block';
-                // 💡 使用 phaseRemaining 啟動計時器
                 startGlobalTimer(roomState.phaseRemaining, 'countdownNumber', true);
                 return;
             } else if (roomState.state === 'VOTING') {
                 switchView('votingScreen');
+                
+                // 💡 電腦版音樂不停止＆幽靈選票修正：進入投票時強制卡掉音樂並清空選票
+                const audio = document.getElementById('bgm');
+                if (audio && !audio.paused) {
+                    audio.pause();
+                }
+                myVoteTarget = null;
+                
                 renderVoteGrid(roomState.players);
-                // 💡 使用 phaseRemaining 啟動計時器
                 startGlobalTimer(roomState.phaseRemaining, 'voteTimer', false);
                 return;
             } else if (roomState.state === 'LOBBY') {
