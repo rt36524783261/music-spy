@@ -256,16 +256,22 @@
             });
         }
 
-        // 💡 修正 2：時間歸零時精準暫停音樂
-        function startGlobalTimer(endTime, elementId, isPlayingPhase = false) {
+        // 💡 核心解法：直接接收「剩餘時間」，並加上自己的本地時間推算倒數，避開時鐘誤差
+        function startGlobalTimer(remainingMs, elementId, isPlayingPhase = false) {
             clearInterval(globalTimerInterval);
+            if (!remainingMs) return;
+
             const el = document.getElementById(elementId);
             const audio = document.getElementById('bgm');
             
+            // 以前端收到封包的當下時間，往後推算屬於「自己本地」的結束時間
+            const localEndTime = Date.now() + remainingMs;
+            
             const updateTimer = () => {
-                let remain = Math.ceil((endTime - Date.now()) / 1000);
+                let remain = Math.ceil((localEndTime - Date.now()) / 1000);
                 if (remain <= 0) {
                     remain = 0;
+                    clearInterval(globalTimerInterval); // 歸零就停止計時器
                     if (isPlayingPhase && audio && !audio.paused) {
                         audio.pause();
                     }
@@ -362,15 +368,16 @@
                 document.getElementById('playStatusDesc').innerText = '找出那個音樂不一樣的騙子';
                 document.getElementById('downloadList').style.display = 'none';
                 document.getElementById('countdownNumber').style.display = 'block';
-                startGlobalTimer(roomState.phaseEndTime, 'countdownNumber', true);
+                // 💡 使用 phaseRemaining 啟動計時器
+                startGlobalTimer(roomState.phaseRemaining, 'countdownNumber', true);
                 return;
             } else if (roomState.state === 'VOTING') {
                 switchView('votingScreen');
                 renderVoteGrid(roomState.players);
-                startGlobalTimer(roomState.phaseEndTime, 'voteTimer', false);
+                // 💡 使用 phaseRemaining 啟動計時器
+                startGlobalTimer(roomState.phaseRemaining, 'voteTimer', false);
                 return;
             } else if (roomState.state === 'LOBBY') {
-                // 💡 修正 3：防呆保護網，卡在 0 秒的人會因為 LOBBY 狀態而強制跳轉
                 if (isPlayingOrVoting) {
                     if (roomState.lastResult) {
                         renderResultScreen(roomState.lastResult);
@@ -401,11 +408,7 @@
             Object.keys(roomState.players).forEach(uid => {
                 const p = roomState.players[uid];
                 const hostText = (uid === roomState.hostId) ? '<span style="font-size: 12px; color: #cf9366; margin-left: 4px;">(房主)</span>' : '';
-                
-                // 💡 修正 1：拔除刺眼的紅色離線標籤，直接以 isReady 決定狀態顯示
                 let statusText = p.isReady ? '<span style="color: #9cbca7;">準備完成</span>' : '<span style="color: #c7bcae;">準備中</span>';
-                
-                // 只有全體玩家（包含斷線重連者）都是準備完成，allReady 才會是 true
                 if (!p.isReady) allReady = false; 
 
                 let kickButtonHtml = (isHost && uid !== myUserId) ? `<button class="btn-kick" onclick="kickPlayer('${uid}')">踢出</button>` : '';

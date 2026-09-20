@@ -5,6 +5,7 @@ const io = require('socket.io')(http);
 
 const rooms = {}; 
 
+// 💡 請在此處貼上你原本完整的 POOLS 歌單物件
 const POOLS = {
   '華語流行': [
     "周杰倫 擱淺", "周杰倫 七里香", "周杰倫 晴天", "周杰倫 稻香", "周杰倫 夜曲",
@@ -79,6 +80,11 @@ function broadcastRoomState(roomId) {
   delete safeRoom.votingTimeout;
   delete safeRoom.globalLoadingTimeout;
   delete safeRoom.singlePlayerIdleTimer;
+  
+  // 💡 核心解法：由伺服器幫忙算出「剩餘毫秒數」，避開跨裝置時差
+  if (room.phaseEndTime) {
+    safeRoom.phaseRemaining = Math.max(0, room.phaseEndTime - Date.now());
+  }
   
   safeRoom.players = {};
   for (const uid in room.players) {
@@ -204,7 +210,7 @@ io.on('connection', (socket) => {
       settings: { duration: 15, category: '混合隨機' }, 
       undercoverId: null, votes: {},
       civilianSong: '', undercoverSong: '',
-      playedSongs: [], scores: {}, lastResult: null, // 💡 新增 lastResult 記憶最後一次結算狀態
+      playedSongs: [], scores: {}, lastResult: null,
       phaseEndTime: null, playTimeout: null, votingTimeout: null, globalLoadingTimeout: null,
       singlePlayerIdleTimer: null
     };
@@ -423,7 +429,6 @@ io.on('connection', (socket) => {
     
     const undercoverName = room.players[room.undercoverId]?.name || '未知';
 
-    // 💡 記憶這局結算結果
     const resultData = { winner, eliminatedData, undercoverName, civilianSong: room.civilianSong, undercoverSong: room.undercoverSong };
     room.lastResult = resultData;
 
