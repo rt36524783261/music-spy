@@ -29,7 +29,6 @@
         .btn-setting { border: 2px solid #9cbca7; color: #9cbca7; }
         .btn-setting:hover { background-color: #9cbca7; color: white; }
         
-        /* 踢出按鈕小巧精緻 */
         .btn-kick { background-color: #e07a5f; color: white; border: none; padding: 4px 10px; font-size: 12px; border-radius: 8px; margin-left: 10px; cursor: pointer; box-shadow: none; }
         .btn-kick:hover { background-color: #c9654b; transform: none; }
 
@@ -214,7 +213,7 @@
 
         function createRoom() { socket.emit('create_room', { userId: myUserId, userName: getMyName() }); }
         function joinRoom() {
-            const inputRoomId = document.getElementById('roomInput'].value.trim().toUpperCase();
+            const inputRoomId = document.getElementById('roomInput').value.trim().toUpperCase();
             if (!inputRoomId) return showAlert("請輸入房間碼！");
             socket.emit('join_room', { roomId: inputRoomId, userId: myUserId, userName: getMyName() });
         }
@@ -237,12 +236,10 @@
 
         socket.on('error_msg', showAlert);
         
-        // 房主解散或斷線時的反應
         socket.on('room_destroyed', () => { 
             showAlert("房主已解散房間或離開！", () => { currentRoomId = null; switchView('homeScreen'); }); 
         });
 
-        // 被房主踢出時的反應
         socket.on('kicked_out', () => {
             showAlert("你已被房主請出房間！", () => { currentRoomId = null; switchView('homeScreen'); });
         });
@@ -275,7 +272,6 @@
                                  p.isReady ? '<span style="color: #9cbca7;">準備完成</span>' : '<span style="color: #c7bcae;">準備中</span>';
                 if (p.status === 'ONLINE' && !p.isReady) allReady = false; 
 
-                // 如果我是房主，且這個人不是我自己，幫他加一顆「踢出」按鈕
                 let kickButtonHtml = '';
                 if (isHost && uid !== myUserId) {
                     kickButtonHtml = `<button class="btn-kick" onclick="kickPlayer('${uid}')">踢出</button>`;
@@ -293,7 +289,6 @@
             document.getElementById('startBtn').style.display = (isHost && allReady && Object.keys(roomState.players).length > 1) ? 'inline-block' : 'none';
         });
 
-        // 房主發動踢人
         function kickPlayer(targetUserId) {
             showConfirm("確定要把這傢伙踢出房間嗎？", () => {
                 socket.emit('kick_player', { roomId: currentRoomId, targetUserId: targetUserId, hostId: myUserId });
