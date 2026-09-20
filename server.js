@@ -6,7 +6,6 @@ const io = require('socket.io')(http);
 const rooms = {}; 
 const disconnectTimers = {}; 
 
-// 💡 200 首無敵題庫：動漫神曲已全面替換為官方日文原名，保證 100% 原唱
 const POOLS = {
   '華語流行': [
     "周杰倫 擱淺", "周杰倫 七里香", "周杰倫 晴天", "周杰倫 稻香", "周杰倫 夜曲",
@@ -16,7 +15,7 @@ const POOLS = {
     "韋禮安 如果可以", "韋禮安 慢慢等", "韋禮安 還是會", "韋禮安 女孩", "韋禮安 因為是你",
     "周興哲 以後別做朋友", "周興哲 你，好不好", "周興哲 怎麼了", "周興哲 如果雨之後", "周興哲 永不失聯的愛",
     "八三夭 想見你想見你想見你", "八三夭 東區東區", "八三夭 顛倒世界", "八三夭 我不想改變世界我只想不被世界改變", "八三夭 致青春",
-    "茄子蛋 閣愛妳一擺", "茄子蛋 浪子回頭", "茄子蛋 浪流連", "茄子蛋 愛情你比我想的閣較偉大", "茄子蛋 這款自作多情",
+    "茄子蛋 閣愛妳一擺", "茄子蛋 浪子回頭", "茄子蛋 浪流連", "茄子蛋 愛情你比我想的閣較偉大", "茄子蛋 恰似你的溫柔",
     "田馥甄 小幸運", "田馥甄 魔鬼中的天使", "田馥甄 寂寞寂寞就好", "田馥甄 日常", "田馥甄 無人知曉",
     "陳奕迅 孤勇者", "陳奕迅 十年", "陳奕迅 愛情轉移", "陳奕迅 淘汰", "陳奕迅 浮誇"
   ],
@@ -28,21 +27,21 @@ const POOLS = {
     "aespa Next Level", "aespa Savage", "aespa Drama", "aespa Spicy", "aespa Illusion",
     "IVE I AM", "IVE LOVE DIVE", "IVE After LIKE", "IVE ELEVEN", "IVE Baddie",
     "LE SSERAFIM UNFORGIVEN", "LE SSERAFIM ANTIFRAGILE", "LE SSERAFIM FEARLESS", "LE SSERAFIM Perfect Night", "LE SSERAFIM Eve Psyche",
-    "(G)I-DLE Nxde", "(G)I-DLE TOMBOY", "(G)I-DLE Queencard", "(G)I-DLE LATATA", "(G)I-DLE Super Lady",
+    "GIDLE Nxde", "GIDLE TOMBOY", "GIDLE Queencard", "GIDLE LATATA", "GIDLE Super Lady",
     "SEVENTEEN Super", "SEVENTEEN HOT", "SEVENTEEN Don't Wanna Cry", "SEVENTEEN VERY NICE", "SEVENTEEN Clap",
     "Stray Kids God's Menu", "Stray Kids MANIAC", "Stray Kids S-Class", "ITZY WANNABE", "Jungkook Seven"
   ],
   '動漫神曲': [
-    "YOASOBI アイドル", "YOASOBI 夜に駆ける", "YOASOBI 怪物", "YOASOBI 祝福", "YOASOBI 群青",
-    "LiSA 紅蓮華", "LiSA 炎", "LiSA crossing field", "LiSA oath sign", "LiSA Catch the Moment",
-    "Aimer 残響散歌", "Aimer Brave Shine", "Aimer I beg you", "Aimer RE:I AM", "Aimer ninelie",
-    "米津玄師 KICK BACK", "米津玄師 Lemon", "米津玄師 ピースサイン", "米津玄師 Orion", "米津玄師 LOSER",
-    "RADWIMPS 前前前世", "RADWIMPS スパークル", "RADWIMPS なんでもないや", "RADWIMPS グランドエスケープ", "RADWIMPS 愛にできることはまだあるかい",
-    "King Gnu SPECIALZ", "King Gnu 白日", "King Gnu 逆夢", "King Gnu 一途", "King Gnu BOY",
-    "Official髭男dism ミックスナッツ", "Official髭男dism Cry Baby", "Official髭男dism Pretender", "Official髭男dism 宿命", "Official髭男dism イエスタデイ",
-    "キタニタツヤ 青のすみか", "Vaundy CHAINSAW BLOOD", "Creepy Nuts Bling-Bang-Bang-Born", "TK from 凛として時雨 unravel", "FLOW GO!!!",
-    "SPYAIR サクラミツツキ", "SPYAIR イマジネーション", "藍井エイル IGNITE", "藍井エイル INNOCENCE", "藍井エイル シリウス",
-    "KANA-BOON シルエット", "いきものがかり ブルーバード", "YUI again", "高橋洋子 残酷な天使のテーゼ", "和田光司 Butter-Fly"
+    "YOASOBI Idol", "YOASOBI Yoru ni Kakeru", "YOASOBI Kaibutsu", "YOASOBI Shukufuku", "YOASOBI Gunjo",
+    "LiSA Gurenge", "LiSA Homura", "LiSA crossing field", "LiSA oath sign", "LiSA Catch the Moment",
+    "Aimer Zankyou Sanka", "Aimer Brave Shine", "Aimer I beg you", "Aimer RE:I AM", "Aimer ninelie",
+    "Kenshi Yonezu KICK BACK", "Kenshi Yonezu Lemon", "Kenshi Yonezu Peace Sign", "Kenshi Yonezu Orion", "Kenshi Yonezu LOSER",
+    "RADWIMPS Zenzenzense", "RADWIMPS Sparkle", "RADWIMPS Nandemonaiya", "RADWIMPS Grand Escape", "RADWIMPS Is There Still Anything That Love Can Do",
+    "King Gnu SPECIALZ", "King Gnu Hakujitsu", "King Gnu Sakayume", "King Gnu Ichizu", "King Gnu Boy",
+    "Official HIGE DANdism Mixed Nuts", "Official HIGE DANdism Cry Baby", "Official HIGE DANdism Pretender", "Official HIGE DANdism Shukumei", "Official HIGE DANdism Yesterday",
+    "Tatsuya Kitani Ao no Sumika", "Vaundy Chainsaw Blood", "Creepy Nuts Bling-Bang-Bang-Born", "TK unravel", "FLOW GO",
+    "SPYAIR Sakura Mitsutsuki", "SPYAIR Imagination", "Eir Aoi IGNITE", "Eir Aoi INNOCENCE", "Eir Aoi Sirius",
+    "KANA-BOON Silhouette", "Ikimonogakari Blue Bird", "Yui again", "Yoko Takahashi A Cruel Angel's Thesis", "Wada Koji Butter-Fly"
   ],
   '流行英語': [
     "Taylor Swift Cruel Summer", "Taylor Swift Anti-Hero", "Taylor Swift Blank Space", "Taylor Swift Shake It Off", "Taylor Swift Love Story",
@@ -72,31 +71,11 @@ async function fetchAppleMusicPreview(keyword) {
 
 app.get('/', (req, res) => { res.sendFile(__dirname + '/index.html'); });
 
-// 💡 新增：集中管理檢查下載進度的函數，防止被凍結的玩家卡死房間
-function checkDownloadProgress(roomId) {
-  const room = rooms[roomId];
-  if (!room || room.state !== 'PLAYING' || room.isPlayingStarted) return;
-  
-  // 只計算還活著、且不是旁觀者的玩家
-  const activePlayers = Object.values(room.players).filter(p => p.status === 'ONLINE' && !p.isSpectator);
-  const loadedCount = activePlayers.filter(p => p.isLoaded === true).length;
-  
-  if (loadedCount === activePlayers.length && activePlayers.length > 0) {
-    room.isPlayingStarted = true;
-    io.to(roomId).emit('START_PLAYING', room.settings.duration);
-    
-    setTimeout(() => {
-      room.state = 'VOTING';
-      io.to(roomId).emit('START_VOTING');
-      setTimeout(() => { calculateVotes(roomId); }, 20000 + 1000); 
-    }, room.settings.duration * 1000 + 1000);
-  }
-}
-
 io.on('connection', (socket) => {
   console.log(`連線建立: ${socket.id}`);
 
   socket.on('create_room', ({ userId, userName }) => {
+    // 💡 預設名稱修正
     const finalName = userName || '飛天巴庫';
     const roomId = Math.random().toString(36).substring(2, 6).toUpperCase(); 
 
@@ -106,10 +85,9 @@ io.on('connection', (socket) => {
       undercoverId: null, votes: {},
       civilianSong: '', undercoverSong: '',
       playedSongs: [],
-      scores: {},
-      isPlayingStarted: false
+      scores: {} 
     };
-    rooms[roomId].players[userId] = { name: finalName, socketId: socket.id, status: 'ONLINE', isReady: false, isLoaded: false, isSpectator: false };
+    rooms[roomId].players[userId] = { name: finalName, socketId: socket.id, status: 'ONLINE', isReady: false, isLoaded: false };
     rooms[roomId].scores[userId] = 0; 
 
     socket.join(roomId);
@@ -122,17 +100,19 @@ io.on('connection', (socket) => {
     if (!room) return socket.emit('error_msg', '找不到這個房間碼！');
 
     if (room.players[userId]) {
+      // 💡 如果是原本就在房間裡的人重連，允許他進來！
       clearTimeout(disconnectTimers[userId]); 
       room.players[userId].socketId = socket.id; 
       room.players[userId].status = 'ONLINE';
     } else {
-      room.players[userId] = { name: userName || '飛天巴庫', socketId: socket.id, status: 'ONLINE', isReady: false, isLoaded: false, isSpectator: false };
-      if (room.scores[userId] === undefined) room.scores[userId] = 0; 
-      
-      // 💡 鎖門機制：如果遊戲已經開始，新加入的人直接變成旁觀者
+      // 💡 鎖門機制：新玩家想加入時，如果房間已經開始遊戲，直接擋掉！
       if (room.state !== 'LOBBY') {
-        room.players[userId].isSpectator = true; 
+        return socket.emit('error_msg', '遊戲正在進行中，無法加入！');
       }
+      
+      // 💡 預設名稱修正
+      room.players[userId] = { name: userName || '飛天巴庫', socketId: socket.id, status: 'ONLINE', isReady: false, isLoaded: false };
+      if (room.scores[userId] === undefined) room.scores[userId] = 0; 
     }
     socket.join(roomId);
     socket.emit('room_joined', roomId);
@@ -183,18 +163,12 @@ io.on('connection', (socket) => {
     }
   });
 
-  // 💡 專門接殺「切換 APP 背景冷凍」的事件
-  socket.on('go_background', ({ roomId, userId }) => {
+  // 💡 新增：專門用來讓前端切換 APP 時強制取消準備的指令
+  socket.on('cancel_ready', ({ roomId, userId }) => {
     const room = rooms[roomId];
     if (room && room.players[userId]) {
-        room.players[userId].status = 'OFFLINE';
-        if (room.state === 'LOBBY') {
-            room.players[userId].isReady = false; // 在大廳切畫面：秒取消準備
-        } else {
-            room.players[userId].isSpectator = true; // 在遊戲中切畫面：直接變旁觀者
-            checkDownloadProgress(roomId); // 踢除資格後，立刻檢查剩下的人是不是載好了
-        }
-        io.to(roomId).emit('room_state_update', room);
+      room.players[userId].isReady = false;
+      io.to(roomId).emit('room_state_update', room);
     }
   });
 
@@ -202,7 +176,6 @@ io.on('connection', (socket) => {
     const room = rooms[roomId];
     if (room && room.hostId === userId) {
       room.state = 'PLAYING';
-      room.isPlayingStarted = false;
       room.votes = {}; 
       io.to(roomId).emit('game_starting');
 
@@ -241,9 +214,9 @@ io.on('connection', (socket) => {
         return;
       }
 
+      room.loadedCount = 0;
       playerIds.forEach(uid => {
         room.players[uid].isLoaded = false;
-        room.players[uid].isSpectator = false; // 遊戲開始時，大家重置為參賽者
         const targetUrl = (uid === room.undercoverId) ? undercoverUrl : civilianUrl;
         io.to(room.players[uid].socketId).emit('PRELOAD_MUSIC', targetUrl);
       });
@@ -254,15 +227,29 @@ io.on('connection', (socket) => {
     const room = rooms[roomId];
     if (room && room.players[userId]) {
       room.players[userId].isLoaded = true;
-      // 廣播給所有人：這個玩家已經載好囉！
-      io.to(roomId).emit('PLAYER_LOADED', userId);
-      checkDownloadProgress(roomId);
+      
+      const onlinePlayers = Object.values(room.players).filter(p => p.status === 'ONLINE');
+      const loadedOnlineCount = onlinePlayers.filter(p => p.isLoaded === true).length;
+      
+      if (loadedOnlineCount === onlinePlayers.length && onlinePlayers.length > 0) {
+        io.to(roomId).emit('START_PLAYING', room.settings.duration);
+        
+        setTimeout(() => {
+          room.state = 'VOTING';
+          io.to(roomId).emit('START_VOTING');
+          
+          setTimeout(() => {
+            calculateVotes(roomId);
+          }, 20000 + 1000); 
+
+        }, room.settings.duration * 1000 + 1000);
+      }
     }
   });
 
   socket.on('submit_vote', ({ roomId, userId, targetId }) => {
     const room = rooms[roomId];
-    if (room && !room.players[userId].isSpectator) {
+    if (room) {
       if (targetId === null) delete room.votes[userId]; 
       else room.votes[userId] = targetId;
     }
@@ -276,8 +263,7 @@ io.on('connection', (socket) => {
 
     let voteCounts = {};
     for (let voter in room.votes) {
-      // 結算時，旁觀者的票不算數！
-      if (room.players[voter] && room.players[voter].status === 'ONLINE' && !room.players[voter].isSpectator) {
+      if (room.players[voter] && room.players[voter].status === 'ONLINE') {
         let target = room.votes[voter];
         if (room.players[target]) { 
           voteCounts[target] = (voteCounts[target] || 0) + 1;
@@ -301,15 +287,14 @@ io.on('connection', (socket) => {
     const undercoverDied = eliminated.includes(room.undercoverId);
     const winner = undercoverDied ? '平民勝利' : '臥底勝利';
     
-    // 計分時同樣排除旁觀者
     if (winner === '平民勝利') {
       Object.keys(room.players).forEach(uid => {
-        if (uid !== room.undercoverId && room.players[uid].status === 'ONLINE' && !room.players[uid].isSpectator) {
+        if (uid !== room.undercoverId && room.players[uid].status === 'ONLINE') {
           room.scores[uid] += 1;
         }
       });
     } else {
-      if (room.players[room.undercoverId] && room.players[room.undercoverId].status === 'ONLINE' && !room.players[room.undercoverId].isSpectator) {
+      if (room.players[room.undercoverId] && room.players[room.undercoverId].status === 'ONLINE') {
         room.scores[room.undercoverId] += 3;
       }
     }
@@ -329,10 +314,7 @@ io.on('connection', (socket) => {
       undercoverSong: room.undercoverSong
     });
 
-    Object.values(room.players).forEach(p => {
-        p.isReady = false;
-        p.isSpectator = false; // 結算後，旁觀者刑期屆滿，恢復自由身
-    });
+    Object.values(room.players).forEach(p => p.isReady = false);
     io.to(roomId).emit('room_state_update', room);
   }
 
@@ -343,13 +325,7 @@ io.on('connection', (socket) => {
         if (room.players[userId].socketId === socket.id) {
           
           room.players[userId].status = 'OFFLINE';
-          if (room.state === 'LOBBY') {
-              room.players[userId].isReady = false; 
-          } else {
-              room.players[userId].isSpectator = true; 
-              checkDownloadProgress(roomId);
-          }
-          
+          room.players[userId].isReady = false; 
           io.to(roomId).emit('room_state_update', room); 
           
           disconnectTimers[userId] = setTimeout(() => {
