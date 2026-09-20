@@ -95,6 +95,22 @@ io.on('connection', (socket) => {
     }
   });
 
+  // 房主踢人功能
+  socket.on('kick_player', ({ roomId, targetUserId, hostId }) => {
+    const room = rooms[roomId];
+    if (room && room.hostId === hostId) {
+      if (room.players[targetUserId]) {
+        const targetSocketId = room.players[targetUserId].socketId;
+        delete room.players[targetUserId];
+        
+        // 通知被踢的人
+        io.to(targetSocketId).emit('kicked_out');
+        // 更新其他人畫面
+        io.to(roomId).emit('room_state_update', room);
+      }
+    }
+  });
+
   socket.on('update_settings', ({ roomId, userId, settings }) => {
     const room = rooms[roomId];
     if (room && room.hostId === userId) {
@@ -114,7 +130,7 @@ io.on('connection', (socket) => {
   socket.on('start_game', async ({ roomId, userId }) => {
     const room = rooms[roomId];
     if (room && room.hostId === userId) {
-      room.state = 'PRELOADING';
+      room.state = 'PLAYING';
       room.votes = {}; 
       io.to(roomId).emit('game_starting');
 
@@ -141,6 +157,7 @@ io.on('connection', (socket) => {
       ]);
 
       if (!civilianUrl || !undercoverUrl) {
+        room.state = 'LOBBY';
         io.to(roomId).emit('error_msg', 'Apple API 抓歌失敗，請重新開始。');
         return;
       }
@@ -158,12 +175,16 @@ io.on('connection', (socket) => {
     const room = rooms[roomId];
     if (room && room.players[userId]) {
       room.players[userId].isLoaded = true;
-      room.loadedCount = Object.values(room.players).filter(p => p.isLoaded === true).length;
       
-      if (room.loadedCount === Object.keys(room.players).length) {
+      // 只計算線上且活著的玩家下載進度
+      const onlinePlayers = Object.values(room.players).filter(p => p.status === 'ONLINE');
+      const loadedOnlineCount = onlinePlayers.filter(p => p.isLoaded === true).length;
+      
+      if (loadedOnlineCount === onlinePlayers.length) {
         io.to(roomId).emit('START_PLAYING', room.settings.duration);
         
         setTimeout(() => {
+          room.state = 'VOTING';
           io.to(roomId).emit('START_VOTING');
           
           setTimeout(() => {
@@ -187,10 +208,17 @@ io.on('connection', (socket) => {
     const room = rooms[roomId];
     if (!room) return;
 
+    room.state = 'LOBBY';
+
+    // 結算時，只計算目前依然存在於房間內且在線的玩家票數
     let voteCounts = {};
     for (let voter in room.votes) {
-      let target = room.votes[voter];
-      voteCounts[target] = (voteCounts[target] || 0) + 1;
+      if (room.players[voter] && room.players[voter].status === 'ONLINE') {
+        let target = room.votes[voter];
+        if (room.players[target]) { // 確保被投的人還在房間
+          voteCounts[target] = (voteCounts[target] || 0) + 1;
+        }
+      }
     }
 
     let maxVotes = 0;
@@ -204,10 +232,14 @@ io.on('connection', (socket) => {
       }
     }
 
+    // 如果最高票是 0 票（代表大家沒投票或全棄票）
+    if (maxVotes === 0) {
+      eliminated = [];
+    }
+
     const undercoverDied = eliminated.includes(room.undercoverId);
     const winner = undercoverDied ? '平民勝利' : '臥底勝利';
     
-    // 👇 修改這裡：改成打包包含身分屬性的物件陣列
     const eliminatedData = eliminated.map(id => ({
       name: room.players[id]?.name || '未知',
       isUndercover: id === room.undercoverId
@@ -217,7 +249,7 @@ io.on('connection', (socket) => {
 
     io.to(roomId).emit('GAME_RESULT', { 
       winner, 
-      eliminatedData, // 替換原本的 eliminatedNames
+      eliminatedData, 
       undercoverName,
       civilianSong: room.civilianSong,
       undercoverSong: room.undercoverSong
@@ -227,18 +259,39 @@ io.on('connection', (socket) => {
     io.to(roomId).emit('room_state_update', room);
   }
 
+  // 斷線處理
   socket.on('disconnect', () => {
     for (const roomId in rooms) {
       const room = rooms[roomId];
       for (const userId in room.players) {
         if (room.players[userId].socketId === socket.id) {
-          room.players[userId].status = 'OFFLINE';
-          io.to(roomId).emit('room_state_update', room); 
-          disconnectTimers[userId] = setTimeout(() => {
-            delete room.players[userId];
+          
+          // 如果斷線的是「房主」，直接核彈引爆房間！
+          if (room.hostId === userId) {
+            io.to(roomId).emit('room_destroyed');
+            delete rooms[roomId];
+            break;
+          }
+
+          // 如果是普通玩家：
+          if (room.state === 'LOBBY') {
+            // 在等待室：給 30 秒緩衝重連
+            room.players[userId].status = 'OFFLINE';
             io.to(roomId).emit('room_state_update', room); 
+            
+            disconnectTimers[userId] = setTimeout(() => {
+              if (room.players[userId]) {
+                delete room.players[userId];
+                io.to(roomId).emit('room_state_update', room); 
+                if (Object.keys(room.players).length === 0) delete rooms[roomId];
+              }
+            }, 30000); 
+          } else {
+            // 💡 關鍵：如果在「遊戲中途（聽歌/投票）」斷線，直接一秒踢除，絕不拖泥帶水！
+            delete room.players[userId];
+            io.to(roomId).emit('room_state_update', room);
             if (Object.keys(room.players).length === 0) delete rooms[roomId];
-          }, 30000); 
+          }
           break;
         }
       }

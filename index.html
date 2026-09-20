@@ -28,12 +28,16 @@
         .btn-outline:hover { background-color: #e07a5f; color: white; }
         .btn-setting { border: 2px solid #9cbca7; color: #9cbca7; }
         .btn-setting:hover { background-color: #9cbca7; color: white; }
+        
+        /* 踢出按鈕小巧精緻 */
+        .btn-kick { background-color: #e07a5f; color: white; border: none; padding: 4px 10px; font-size: 12px; border-radius: 8px; margin-left: 10px; cursor: pointer; box-shadow: none; }
+        .btn-kick:hover { background-color: #c9654b; transform: none; }
 
         .room-header { border-bottom: 2px dashed #f2ede4; padding-bottom: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;}
         #displayRoomId { font-size: 24px; font-weight: 900; color: #cf9366; margin: 0; }
         .room-settings-info { width: 100%; font-size: 14px; color: #a39589; margin-top: 10px; font-weight: bold; }
         
-        .player-list-item { font-size: 16px; font-weight: bold; padding: 14px 15px; margin: 8px 0; background: #faf8f5; border-radius: 12px; color: #7a6a5d; border: 1px solid #f2ede4; display: flex; justify-content: center; align-items: center; }
+        .player-list-item { font-size: 16px; font-weight: bold; padding: 12px 15px; margin: 8px 0; background: #faf8f5; border-radius: 12px; color: #7a6a5d; border: 1px solid #f2ede4; display: flex; justify-content: space-between; align-items: center; }
 
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(74, 64, 54, 0.6); z-index: 999; justify-content: center; align-items: center; backdrop-filter: blur(3px); }
         .modal-box { background: white; padding: 30px; border-radius: 20px; width: 85%; max-width: 350px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); text-align: center; }
@@ -51,8 +55,6 @@
             background: #faf8f5; border: 1px solid #f2ede4; border-radius: 12px; 
             padding: 15px; margin-bottom: 15px; text-align: left;
         }
-        
-        /* 給動態產生的名字一點粗體效果 */
         .eliminated-name { font-weight: bold; }
     </style>
 </head>
@@ -212,7 +214,7 @@
 
         function createRoom() { socket.emit('create_room', { userId: myUserId, userName: getMyName() }); }
         function joinRoom() {
-            const inputRoomId = document.getElementById('roomInput').value.trim().toUpperCase();
+            const inputRoomId = document.getElementById('roomInput'].value.trim().toUpperCase();
             if (!inputRoomId) return showAlert("請輸入房間碼！");
             socket.emit('join_room', { roomId: inputRoomId, userId: myUserId, userName: getMyName() });
         }
@@ -234,7 +236,17 @@
         }
 
         socket.on('error_msg', showAlert);
-        socket.on('room_destroyed', () => { showAlert("房主已解散房間！", () => { currentRoomId = null; switchView('homeScreen'); }); });
+        
+        // 房主解散或斷線時的反應
+        socket.on('room_destroyed', () => { 
+            showAlert("房主已解散房間或離開！", () => { currentRoomId = null; switchView('homeScreen'); }); 
+        });
+
+        // 被房主踢出時的反應
+        socket.on('kicked_out', () => {
+            showAlert("你已被房主請出房間！", () => { currentRoomId = null; switchView('homeScreen'); });
+        });
+
         socket.on('room_joined', (roomId) => { currentRoomId = roomId; switchView('roomScreen'); });
 
         socket.on('room_state_update', (roomState) => {
@@ -262,12 +274,31 @@
                 let statusText = p.status !== 'ONLINE' ? '<span style="color: #e07a5f;">斷線中</span>' : 
                                  p.isReady ? '<span style="color: #9cbca7;">準備完成</span>' : '<span style="color: #c7bcae;">準備中</span>';
                 if (p.status === 'ONLINE' && !p.isReady) allReady = false; 
-                listDiv.innerHTML += `<div class="player-list-item">${index} - ${p.name}${hostText} - ${statusText}</div>`;
+
+                // 如果我是房主，且這個人不是我自己，幫他加一顆「踢出」按鈕
+                let kickButtonHtml = '';
+                if (isHost && uid !== myUserId) {
+                    kickButtonHtml = `<button class="btn-kick" onclick="kickPlayer('${uid}')">踢出</button>`;
+                }
+
+                listDiv.innerHTML += `
+                    <div class="player-list-item">
+                        <span>${index} - ${p.name}${hostText}</span>
+                        <div>${statusText} ${kickButtonHtml}</div>
+                    </div>
+                `;
                 index++;
             }
 
             document.getElementById('startBtn').style.display = (isHost && allReady && Object.keys(roomState.players).length > 1) ? 'inline-block' : 'none';
         });
+
+        // 房主發動踢人
+        function kickPlayer(targetUserId) {
+            showConfirm("確定要把這傢伙踢出房間嗎？", () => {
+                socket.emit('kick_player', { roomId: currentRoomId, targetUserId: targetUserId, hostId: myUserId });
+            });
+        }
 
         function toggleReady() {
             if (!currentRoomId) return;
@@ -347,7 +378,6 @@
             socket.emit('submit_vote', { roomId: currentRoomId, userId: myUserId, targetId: myVoteTarget });
         }
 
-        // 👇 結算畫面的動態渲染邏輯在這裡 👇
         socket.on('GAME_RESULT', ({ winner, eliminatedData, undercoverName, civilianSong, undercoverSong }) => {
             switchView('resultScreen');
             
@@ -359,13 +389,12 @@
             document.getElementById('resultCivilianSong').innerText = civilianSong;
             document.getElementById('resultUndercoverSong').innerText = undercoverSong;
 
-            // 判斷淘汰者陣列，組合出帶顏色的 HTML 字串
             let eliminatedHtml = '';
             if (!eliminatedData || eliminatedData.length === 0) {
                 eliminatedHtml = '<span style="color: #a39589;">無人被淘汰</span>';
             } else {
                 eliminatedHtml = eliminatedData.map(p => {
-                    const fontColor = p.isUndercover ? '#e07a5f' : '#9cbca7'; // 臥底紅，平民綠
+                    const fontColor = p.isUndercover ? '#e07a5f' : '#9cbca7'; 
                     return `<span class="eliminated-name" style="color: ${fontColor};">${p.name}</span>`;
                 }).join('<span style="color: #7a6a5d;">, </span>');
             }
