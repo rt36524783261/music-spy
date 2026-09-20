@@ -70,6 +70,25 @@ async function fetchAppleMusicPreview(keyword) {
 
 app.get('/', (req, res) => { res.sendFile(__dirname + '/index.html'); });
 
+// 💡 管理伺服器休眠機制的單人閒置計時器
+function resetSinglePlayerIdleTimer(roomId) {
+  const room = rooms[roomId];
+  if (!room) return;
+  
+  if (room.singlePlayerIdleTimer) {
+    clearTimeout(room.singlePlayerIdleTimer);
+    room.singlePlayerIdleTimer = null;
+  }
+  
+  // 只有在房間狀態，且房間只有 1 個人時，啟動 10 分鐘閒置計時器
+  if (room.state === 'LOBBY' && Object.keys(room.players).length === 1) {
+    const singleUserId = Object.keys(room.players)[0];
+    room.singlePlayerIdleTimer = setTimeout(() => {
+      removePlayer(roomId, singleUserId, '單人閒置超過 10 分鐘，已自動關閉房間進入休眠。');
+    }, 10 * 60 * 1000); // 10 分鐘 (600,000 毫秒)
+  }
+}
+
 // 💡 統一的玩家移除與轉移房主機制
 function removePlayer(roomId, userId, kickMsg = null) {
   const room = rooms[roomId];
@@ -85,56 +104,46 @@ function removePlayer(roomId, userId, kickMsg = null) {
 
   const remaining = Object.keys(room.players);
   if (remaining.length === 0) {
+    if (room.singlePlayerIdleTimer) clearTimeout(room.singlePlayerIdleTimer);
     delete rooms[roomId];
   } else {
     if (room.hostId === userId) {
       room.hostId = remaining[0]; 
     }
     io.to(roomId).emit('room_state_update', room);
+    resetSinglePlayerIdleTimer(roomId);
   }
 }
 
-// 💡 統一的玩家離線處理器 (依據狀態決定 10 秒還是 60 秒炸彈)
+// 💡 統一的玩家離線(切畫面)處理器：拔除所有 60 秒踢人機制，交給房主判斷
 function handlePlayerOffline(roomId, userId) {
   const room = rooms[roomId];
   if (!room || !room.players[userId]) return;
   
   const p = room.players[userId];
   p.status = 'OFFLINE';
-  if (p.offlineTimer) clearTimeout(p.offlineTimer);
 
-  if (room.state === 'LOADING') {
-    // 下載階段：10秒生死線，超時強制踢回大廳
-    p.offlineTimer = setTimeout(() => {
-      removePlayer(roomId, userId, '下載音樂超時，你已被移出房間！');
-      checkDownloadProgress(roomId);
-    }, 10000);
-  } else {
-    // 遊戲/大廳階段：寬鬆放養 60 秒徹底幽靈清除
-    if (room.state === 'LOBBY') p.isReady = false;
-    p.offlineTimer = setTimeout(() => {
-      removePlayer(roomId, userId, '閒置過久，已自動退出房間。');
-    }, 60000);
+  // 只要在房間裡切畫面，就無條件取消準備
+  if (room.state === 'LOBBY') {
+    p.isReady = false;
   }
+  
   io.to(roomId).emit('room_state_update', room);
+  resetSinglePlayerIdleTimer(roomId);
 }
 
 // 💡 統一的玩家回歸處理器
 function handlePlayerOnline(roomId, userId, socketId) {
   const room = rooms[roomId];
-  if (!room || !room.players[userId]) return false; // 回來時如果已被踢除，回傳 false
+  if (!room || !room.players[userId]) return false; // 回來時如果已被房主踢除，回傳 false
   
   const p = room.players[userId];
   p.status = 'ONLINE';
   p.socketId = socketId;
   
-  if (p.offlineTimer) {
-    clearTimeout(p.offlineTimer);
-    p.offlineTimer = null;
-  }
-  
   io.to(roomId).emit('room_state_update', room);
   if (room.state === 'LOADING') checkDownloadProgress(roomId);
+  resetSinglePlayerIdleTimer(roomId);
   return true;
 }
 
@@ -145,14 +154,14 @@ function checkDownloadProgress(roomId) {
   const playerIds = Object.keys(room.players);
   if (playerIds.length === 0) return;
 
-  // 只要「還留在房間內」的人全部載好就發車 (中途切出但未滿 10 秒的人，也會等他)
+  // 只要「還留在房間內」的人全部載好就發車
   const allLoaded = playerIds.every(uid => room.players[uid].isLoaded);
   
   if (allLoaded) {
     if (room.globalLoadingTimeout) clearTimeout(room.globalLoadingTimeout);
     
     room.state = 'PLAYING';
-    room.phaseEndTime = Date.now() + (room.settings.duration * 1000); // 💡 絕對時間戳
+    room.phaseEndTime = Date.now() + (room.settings.duration * 1000); 
     io.to(roomId).emit('room_state_update', room);
     io.to(roomId).emit('START_PLAYING_MUSIC');
     
@@ -174,8 +183,7 @@ io.on('connection', (socket) => {
   console.log(`連線建立: ${socket.id}`);
 
   socket.on('create_room', ({ userId, userName }) => {
-    const finalName = userName || '飛天巴庫';
-    // 💡 房號改為純 4 碼數字
+    const finalName = userName || '天飛巴庫';
     const roomId = Math.floor(1000 + Math.random() * 9000).toString(); 
 
     rooms[roomId] = { 
@@ -184,14 +192,16 @@ io.on('connection', (socket) => {
       undercoverId: null, votes: {},
       civilianSong: '', undercoverSong: '',
       playedSongs: [], scores: {},
-      phaseEndTime: null, playTimeout: null, votingTimeout: null, globalLoadingTimeout: null
+      phaseEndTime: null, playTimeout: null, votingTimeout: null, globalLoadingTimeout: null,
+      singlePlayerIdleTimer: null
     };
-    rooms[roomId].players[userId] = { name: finalName, socketId: socket.id, status: 'ONLINE', isReady: false, isLoaded: false, offlineTimer: null };
+    rooms[roomId].players[userId] = { name: finalName, socketId: socket.id, status: 'ONLINE', isReady: false, isLoaded: false };
     rooms[roomId].scores[userId] = 0; 
 
     socket.join(roomId);
     socket.emit('room_joined', roomId);
     io.to(roomId).emit('room_state_update', rooms[roomId]);
+    resetSinglePlayerIdleTimer(roomId);
   });
 
   socket.on('join_room', ({ roomId, userId, userName }) => {
@@ -202,17 +212,18 @@ io.on('connection', (socket) => {
       handlePlayerOnline(roomId, userId, socket.id);
     } else {
       if (room.state !== 'LOBBY') return socket.emit('error_msg', '遊戲正在進行中，無法加入！');
-      room.players[userId] = { name: userName || '飛天巴庫', socketId: socket.id, status: 'ONLINE', isReady: false, isLoaded: false, offlineTimer: null };
+      room.players[userId] = { name: userName || '天飛巴庫', socketId: socket.id, status: 'ONLINE', isReady: false, isLoaded: false };
       if (room.scores[userId] === undefined) room.scores[userId] = 0; 
     }
     socket.join(roomId);
     socket.emit('room_joined', roomId);
     io.to(roomId).emit('room_state_update', room);
+    resetSinglePlayerIdleTimer(roomId);
   });
 
   socket.on('wake_up', ({ roomId, userId }) => {
     const success = handlePlayerOnline(roomId, userId, socket.id);
-    if (!success) socket.emit('error_to_home', '你已被移出房間或房間已解散！');
+    if (!success) socket.emit('error_to_home', '你已被房主踢出房間或房間已解散！');
   });
 
   socket.on('go_background', ({ roomId, userId }) => {
@@ -247,6 +258,7 @@ io.on('connection', (socket) => {
     if (room && room.hostId === userId) {
       room.settings = settings;
       io.to(roomId).emit('room_state_update', room);
+      resetSinglePlayerIdleTimer(roomId);
     }
   });
 
@@ -255,6 +267,7 @@ io.on('connection', (socket) => {
     if (room && room.players[userId]) {
       room.players[userId].isReady = !room.players[userId].isReady;
       io.to(roomId).emit('room_state_update', room);
+      resetSinglePlayerIdleTimer(roomId);
     }
   });
 
@@ -271,6 +284,7 @@ io.on('connection', (socket) => {
     if (room && room.hostId === userId) {
       room.state = 'LOADING';
       room.votes = {}; 
+      if (room.singlePlayerIdleTimer) { clearTimeout(room.singlePlayerIdleTimer); room.singlePlayerIdleTimer = null; }
       io.to(roomId).emit('game_starting');
 
       const playerIds = Object.keys(room.players);
@@ -305,6 +319,7 @@ io.on('connection', (socket) => {
       if (!civilianUrl || !undercoverUrl) {
         room.state = 'LOBBY';
         io.to(roomId).emit('error_msg', 'Apple API 抓歌失敗，請重新開始。');
+        resetSinglePlayerIdleTimer(roomId);
         return;
       }
 
@@ -314,7 +329,7 @@ io.on('connection', (socket) => {
         io.to(room.players[uid].socketId).emit('PRELOAD_MUSIC', targetUrl);
       });
 
-      // 💡 全局 15秒 極限發車防護網
+      // 💡 下載階段 10 秒生死防呆
       room.globalLoadingTimeout = setTimeout(() => {
         const currentRoom = rooms[roomId];
         if (currentRoom && currentRoom.state === 'LOADING') {
@@ -325,7 +340,7 @@ io.on('connection', (socket) => {
             });
             checkDownloadProgress(roomId);
         }
-      }, 15000);
+      }, 10000);
     }
   });
 
@@ -377,7 +392,6 @@ io.on('connection', (socket) => {
     const undercoverDied = eliminated.includes(room.undercoverId);
     const winner = undercoverDied ? '平民勝利' : '臥底勝利';
     
-    // 💡 防止 NaN 引發伺服器 502 崩潰的安全寫法
     if (winner === '平民勝利') {
       Object.keys(room.players).forEach(uid => {
         if (uid !== room.undercoverId) {
@@ -407,6 +421,7 @@ io.on('connection', (socket) => {
 
     Object.values(room.players).forEach(p => p.isReady = false);
     io.to(roomId).emit('room_state_update', room);
+    resetSinglePlayerIdleTimer(roomId);
   }
 
 });

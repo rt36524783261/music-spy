@@ -25,6 +25,9 @@
         .btn-danger { background-color: #e07a5f; box-shadow: 0 4px 12px rgba(224, 122, 95, 0.3); }
         .btn-danger:hover { background-color: #c9654b; }
         
+        /* 💡 新增未達條件灰暗不可按的樣式 */
+        .btn-disabled { background-color: #d3c9c1 !important; color: #ffffff !important; box-shadow: none !important; cursor: not-allowed !important; transform: none !important; }
+        
         .btn-outline { background-color: transparent; border: 2px solid #e07a5f; color: #e07a5f; box-shadow: none; font-size: 14px; padding: 6px 12px;}
         .btn-outline:hover { background-color: #e07a5f; color: white; }
         .btn-setting { border: 2px solid #9cbca7; color: #9cbca7; }
@@ -83,7 +86,7 @@
         <div class="content-wrapper">
             <h1>音樂臥底</h1>
             <span class="label">輸入暱稱</span>
-            <input type="text" id="nameInput" placeholder="預設: 飛天巴庫">
+            <input type="text" id="nameInput" placeholder="預設: 天飛巴庫">
             <div style="margin-top: 5px;"><button onclick="createRoom()">建立房間</button></div>
             <hr style="border: none; border-top: 2px dashed #f2ede4; margin: 30px 0;">
             <div style="display: flex; justify-content: center; gap: 10px; align-items: center;">
@@ -106,9 +109,11 @@
                 <div class="room-settings-info" id="displaySettings">設定：15秒 | 混合隨機</div>
             </div>
             <div id="playerList" style="margin: 20px 0; min-height: 150px;"></div>
-            <div style="margin-top: 30px;">
+            
+            <!-- 💡 將準備與開始按鈕並排放置 -->
+            <div style="margin-top: 30px; display: flex; justify-content: center; gap: 10px; align-items: center;">
                 <button id="readyBtn" onclick="toggleReady()">準備 / 取消</button>
-                <button id="startBtn" class="btn-danger" style="display: none;" onclick="startGame()">開始遊戲</button>
+                <button id="startBtn" class="btn-danger btn-disabled" style="display: none;" disabled onclick="startGame()">開始遊戲</button>
             </div>
         </div>
     </div>
@@ -209,7 +214,7 @@
         let globalPlayers = {}; 
         let globalScores = {}; 
 
-        // 💡 前端狀態監聽：只通知伺服器你的狀態，所有決策交由伺服器
+        // 💡 雙向監視機制
         document.addEventListener('visibilitychange', () => {
             if (document.hidden && currentRoomId) {
                 socket.emit('go_background', { roomId: currentRoomId, userId: myUserId });
@@ -254,7 +259,6 @@
             });
         }
 
-        // 💡 絕對時間同步核心函數
         function startGlobalTimer(endTime, elementId) {
             clearInterval(globalTimerInterval);
             const el = document.getElementById(elementId);
@@ -270,7 +274,7 @@
 
         function getMyName() {
             let name = document.getElementById('nameInput').value.trim();
-            if (name === "") name = "飛天巴庫";
+            if (name === "") name = "天飛巴庫";
             localStorage.setItem('music_spy_name', name);
             return name;
         }
@@ -323,7 +327,6 @@
 
         socket.on('error_msg', showAlert);
         
-        // 💡 統一處理被踢或房間解散，絕對返回首頁
         socket.on('error_to_home', (msg) => {
             showAlert(msg, () => {
                 currentRoomId = null;
@@ -332,18 +335,16 @@
         });
         
         socket.on('room_destroyed', () => { 
-            showAlert("房主已解散房間或離開超過 60 秒！", () => { currentRoomId = null; switchView('homeScreen'); }); 
+            showAlert("房主已解散房間或閒置過久！", () => { currentRoomId = null; switchView('homeScreen'); }); 
         });
 
         socket.on('room_joined', (roomId) => { currentRoomId = roomId; switchView('roomScreen'); });
 
-        // 💡 動態狀態機與畫面復原系統
         socket.on('room_state_update', (roomState) => {
             if (!currentRoomId) return;
             globalPlayers = roomState.players; 
             globalScores = roomState.scores; 
 
-            // 如果目前是在結算畫面，就不強制拉回其他畫面，除非重新發車 (LOADING)
             if (document.getElementById('resultScreen').style.display === 'block') {
                 if (roomState.state === 'LOADING') {
                     // 若房主新開一局，離開結算
@@ -367,7 +368,7 @@
                 return;
             }
 
-            // 以下為 LOBBY 或 LOADING 畫面的處理
+            // LOBBY 或 LOADING
             document.getElementById('displayRoomId').innerText = currentRoomId;
             document.getElementById('displaySettings').innerText = `設定：${roomState.settings.duration}秒 | ${roomState.settings.category}`;
             document.getElementById('selectDuration').value = roomState.settings.duration;
@@ -385,7 +386,7 @@
             Object.keys(roomState.players).forEach(uid => {
                 const p = roomState.players[uid];
                 const hostText = (uid === roomState.hostId) ? '<span style="font-size: 12px; color: #cf9366; margin-left: 4px;">(房主)</span>' : '';
-                let statusText = p.status !== 'ONLINE' ? '<span style="color: #e07a5f;">斷線中</span>' : 
+                let statusText = p.status !== 'ONLINE' ? '<span style="color: #e07a5f;">離線中</span>' : 
                                  p.isReady ? '<span style="color: #9cbca7;">準備完成</span>' : '<span style="color: #c7bcae;">準備中</span>';
                 if (p.status === 'ONLINE' && !p.isReady) allReady = false; 
 
@@ -403,7 +404,21 @@
                 index++;
             });
 
-            document.getElementById('startBtn').style.display = (isHost && allReady && Object.keys(roomState.players).length > 1) ? 'inline-block' : 'none';
+            // 💡 房主按鈕控制邏輯
+            const startBtn = document.getElementById('startBtn');
+            if (isHost) {
+                startBtn.style.display = 'inline-block';
+                const canStart = allReady && Object.keys(roomState.players).length > 1;
+                if (canStart) {
+                    startBtn.classList.remove('btn-disabled');
+                    startBtn.disabled = false;
+                } else {
+                    startBtn.classList.add('btn-disabled');
+                    startBtn.disabled = true;
+                }
+            } else {
+                startBtn.style.display = 'none';
+            }
         });
 
         function kickPlayer(targetUserId) {
@@ -441,7 +456,6 @@
         socket.on('PLAYER_LOADED', (uid) => {
             const el = document.getElementById('dl_' + uid);
             if(el && globalPlayers[uid]) {
-                // 💡 移除 Emoji
                 el.innerHTML = `
                     <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 10px;">${globalPlayers[uid].name}</span>
                     <span style="color:#9cbca7; flex-shrink: 0;">已就緒</span>`;
