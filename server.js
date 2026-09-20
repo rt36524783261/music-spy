@@ -255,7 +255,6 @@ function calculateVotes(roomId) {
     
     const undercoverName = room.players[room.undercoverId]?.name || '未知';
 
-    // 記錄歷史歌單
     if (!room.historyList) room.historyList = [];
     room.historyList.push({
       round: room.historyList.length + 1,
@@ -464,12 +463,11 @@ io.on('connection', (socket) => {
       totalCount: Object.keys(room.players).length
     });
 
-    // 💡 3-2-1 快速通關邏輯：當所有在線玩家都投完票時，將剩餘時間縮短至 3 秒
     const onlinePlayers = Object.keys(room.players).filter(uid => room.players[uid].status === 'ONLINE');
     const votedOnlineCount = onlinePlayers.filter(uid => room.votes[uid] !== undefined).length;
 
     if (votedOnlineCount >= onlinePlayers.length && onlinePlayers.length > 0) {
-      const fastEndRemaining = 3000; // 3 秒
+      const fastEndRemaining = 3000;
       room.phaseEndTime = Date.now() + fastEndRemaining;
       
       if (room.votingTimeout) clearTimeout(room.votingTimeout);
