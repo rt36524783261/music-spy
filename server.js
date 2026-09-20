@@ -190,6 +190,7 @@ function checkDownloadProgress(roomId) {
     room.playTimeout = setTimeout(() => {
       if(rooms[roomId]) {
         rooms[roomId].state = 'VOTING';
+        room.isVotingLocked = false; // 💡 重置投票鎖定
         room.phaseEndTime = Date.now() + 20000;
         broadcastRoomState(roomId);
         
@@ -210,6 +211,7 @@ function calculateVotes(roomId) {
     if (room.votingTimeout) clearTimeout(room.votingTimeout);
 
     room.state = 'LOBBY';
+    room.isVotingLocked = false;
     room.phaseEndTime = null;
 
     let voteCounts = {};
@@ -285,7 +287,7 @@ io.on('connection', (socket) => {
     rooms[roomId] = { 
       hostId: userId, state: 'LOBBY', players: {},
       settings: { duration: 15, category: '混合隨機' }, 
-      undercoverId: null, votes: {},
+      undercoverId: null, votes: {}, isVotingLocked: false,
       civilianSong: '', undercoverSong: '',
       playedSongs: [], scores: {}, lastResult: null, historyList: [],
       phaseEndTime: null, playTimeout: null, votingTimeout: null, globalLoadingTimeout: null,
@@ -380,6 +382,7 @@ io.on('connection', (socket) => {
     if (room && room.hostId === userId) {
       room.state = 'LOADING';
       room.votes = {}; 
+      room.isVotingLocked = false;
       if (room.singlePlayerIdleTimer) { clearTimeout(room.singlePlayerIdleTimer); room.singlePlayerIdleTimer = null; }
       io.to(roomId).emit('game_starting');
 
@@ -451,9 +454,11 @@ io.on('connection', (socket) => {
     }
   });
 
+  // 💡 投票防手賤開關機制
   socket.on('submit_vote', ({ roomId, userId, targetId }) => {
     const room = rooms[roomId];
     if (!room || room.state !== 'VOTING') return;
+    if (room.isVotingLocked) return; // 若已經鎖定（進入最後3秒倒數），不允許再更改或取消
 
     if (targetId === null) delete room.votes[userId]; 
     else room.votes[userId] = targetId;
@@ -467,7 +472,8 @@ io.on('connection', (socket) => {
     const votedOnlineCount = onlinePlayers.filter(uid => room.votes[uid] !== undefined).length;
 
     if (votedOnlineCount >= onlinePlayers.length && onlinePlayers.length > 0) {
-      const fastEndRemaining = 3000;
+      room.isVotingLocked = true; // 鎖定投票，防止倒數時改投重置
+      const fastEndRemaining = 3000; // 3 秒
       room.phaseEndTime = Date.now() + fastEndRemaining;
       
       if (room.votingTimeout) clearTimeout(room.votingTimeout);

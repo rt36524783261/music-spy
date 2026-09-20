@@ -7,9 +7,14 @@
     <script src="/socket.io/socket.io.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        body { background-color: #f4ece1; color: #4a4036; font-family: 'Noto Sans TC', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        /* 💡 溫暖徑向漸層背景 */
+        body { 
+            background: radial-gradient(circle at center, #fffaf4 0%, #f4ece1 100%); 
+            color: #4a4036; font-family: 'Noto Sans TC', sans-serif; 
+            display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; 
+        }
         
-        /* 💡 溫潤奶茶紙質風：純白不透明容器、微細點狀格紋、溫柔米色邊框、540px寬度 */
+        /* 💡 溫潤奶茶紙質風：純白容器、微細點狀格紋、溫柔米色邊框、540px寬度 */
         .container { 
             background-color: #ffffff; 
             background-image: radial-gradient(#f0e9df 1px, transparent 1px);
@@ -18,17 +23,6 @@
             box-shadow: 0 15px 35px rgba(139, 115, 85, 0.12); 
             text-align: center; position: relative; overflow: hidden; 
             border: 2px solid #eae2d5;
-        }
-        /* 💡 俏皮派對風：角落極淡的樂器與音符浮水印裝飾 */
-        .container::before { 
-            content: '🎵 🎸'; position: absolute; top: 15px; left: 20px; 
-            font-size: 24px; opacity: 0.15; z-index: 0; pointer-events: none; 
-            letter-spacing: 5px;
-        }
-        .container::after { 
-            content: '🥁 ♪'; position: absolute; bottom: 15px; right: 20px; 
-            font-size: 24px; opacity: 0.15; z-index: 0; pointer-events: none; 
-            letter-spacing: 5px;
         }
         .content-wrapper { position: relative; z-index: 1; }
 
@@ -93,65 +87,14 @@
         .rank-name-box { flex: 1; min-width: 0; margin-right: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
         .rank-score-box { flex-shrink: 0; color: #cf9366; font-size: 16px; }
 
-        /* 💡 啵嚕醬專屬造型：布偶貓戴耳機動畫元件 (藍眼、深色面罩、粉鼻) */
+        /* 💡 精緻 SVG 啵嚕醬布偶貓造型動畫元件 */
         .cat-box {
-            position: relative; width: 110px; height: 100px; margin: 15px auto;
+            width: 120px; height: 110px; margin: 10px auto;
             animation: catBob 1.2s ease-in-out infinite alternate;
         }
         @keyframes catBob {
             0% { transform: translateY(0) rotate(-2deg); }
             100% { transform: translateY(-8px) rotate(2deg); }
-        }
-        .cat-head {
-            position: absolute; bottom: 5px; left: 15px; width: 80px; height: 62px;
-            background: #fdfbf7; border-radius: 40px 40px 32px 32px;
-            border: 2px solid #e3b78f; box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-        }
-        /* 布偶貓深色耳朵與面罩斑紋 */
-        .cat-ear {
-            position: absolute; top: -12px; width: 24px; height: 24px;
-            background: #5c4033; clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
-        }
-        .cat-ear.left { left: 4px; transform: rotate(-15deg); }
-        .cat-ear.right { right: 4px; transform: rotate(15deg); }
-        .cat-mask {
-            position: absolute; top: 12px; left: 12px; width: 56px; height: 32px;
-            background: #5c4033; border-radius: 28px 28px 20px 20px; opacity: 0.85;
-        }
-        /* 湛藍色大眼 */
-        .cat-eye {
-            position: absolute; top: 22px; width: 10px; height: 10px;
-            background: #4a90e2; border-radius: 50%; border: 1px solid #ffffff;
-        }
-        .cat-eye.left { left: 21px; }
-        .cat-eye.right { right: 21px; }
-        /* 粉嫩小鼻子與嘴巴 */
-        .cat-nose {
-            position: absolute; top: 31px; left: 37px; width: 6px; height: 4px;
-            background: #d48364; border-radius: 50%;
-        }
-        .cat-mouth {
-            position: absolute; top: 35px; left: 34px; width: 12px; height: 6px;
-            border-bottom: 2px solid #4a4036; border-radius: 0 0 6px 6px;
-        }
-        /* 質感耳機 */
-        .headphone-band {
-            position: absolute; top: -18px; left: 12px; width: 56px; height: 28px;
-            border: 4px solid #e07a5f; border-bottom: none; border-radius: 28px 28px 0 0;
-        }
-        .headphone-cup {
-            position: absolute; top: 14px; width: 14px; height: 24px;
-            background: #e07a5f; border-radius: 6px;
-        }
-        .headphone-cup.left { left: -3px; }
-        .headphone-cup.right { right: -3px; }
-        .floating-notes {
-            position: absolute; top: -15px; right: -5px; font-size: 16px; font-weight: bold;
-            color: #e07a5f; animation: floatNotes 1s ease-in-out infinite alternate;
-        }
-        @keyframes floatNotes {
-            0% { transform: translateY(0); opacity: 0.7; }
-            100% { transform: translateY(-8px); opacity: 1; }
         }
 
         /* 💡 0% 到 100% 時間進度條 */
@@ -225,22 +168,40 @@
             <h1 id="playStatusTitle" style="color: #cf9366;">音檔下載中...</h1>
             <p id="playStatusDesc" style="color: #a39589; font-weight: bold;">請確保手機音量已開啟</p>
             
-            <!-- 💡 啵嚕醬布偶貓專屬動畫元件 -->
+            <!-- 💡 啵嚕醬精緻 SVG 向量圖示元件 -->
             <div id="catWrapper" style="display: none;">
                 <div class="cat-box">
-                    <div class="floating-notes">♪ ♫</div>
-                    <div class="cat-head">
-                        <div class="cat-ear left"></div>
-                        <div class="cat-ear right"></div>
-                        <div class="cat-mask"></div>
-                        <div class="cat-eye left"></div>
-                        <div class="cat-eye right"></div>
-                        <div class="cat-nose"></div>
-                        <div class="cat-mouth"></div>
-                        <div class="headphone-band"></div>
-                        <div class="headphone-cup left"></div>
-                        <div class="headphone-cup right"></div>
-                    </div>
+                    <svg width="120" height="110" viewBox="0 0 120 110" xmlns="http://www.w3.org/2000/svg">
+                        <!-- 耳機頭帶 -->
+                        <path d="M 25 45 A 35 35 0 0 1 95 45" fill="none" stroke="#e07a5f" stroke-width="5" stroke-linecap="round"/>
+                        <!-- 耳機耳罩 -->
+                        <rect x="15" y="40" width="12" height="22" rx="6" fill="#e07a5f"/>
+                        <rect x="93" y="40" width="12" height="22" rx="6" fill="#e07a5f"/>
+                        
+                        <!-- 貓咪頭部輪廓 (布偶貓柔順感) -->
+                        <ellipse cx="60" cy="65" rx="42" ry="36" fill="#fdfbf7" stroke="#e3b78f" stroke-width="2"/>
+                        
+                        <!-- 雙耳 (深色斑紋) -->
+                        <polygon points="25,38 15,10 42,25" fill="#5c4033"/>
+                        <polygon points="95,38 105,10 78,25" fill="#5c4033"/>
+                        
+                        <!-- 招牌深色面罩 (V字對稱) -->
+                        <path d="M 35 45 Q 60 30 85 45 Q 95 75 60 95 Q 25 75 35 45 Z" fill="#5c4033" opacity="0.85"/>
+                        <path d="M 50 35 Q 60 25 70 35 Q 75 60 60 75 Q 45 60 50 35 Z" fill="#fdfbf7"/>
+                        
+                        <!-- 湛藍色大眼 -->
+                        <ellipse cx="43" cy="58" rx="7" ry="8" fill="#4a90e2" stroke="#ffffff" stroke-width="1.5"/>
+                        <circle cx="45" cy="56" r="2.5" fill="#ffffff"/>
+                        <ellipse cx="77" cy="58" rx="7" ry="8" fill="#4a90e2" stroke="#ffffff" stroke-width="1.5"/>
+                        <circle cx="75" cy="56" r="2.5" fill="#ffffff"/>
+                        
+                        <!-- 粉嫩小鼻子與可愛嘴巴 -->
+                        <polygon points="57,68 63,68 60,72" fill="#d48364"/>
+                        <path d="M 54 75 Q 60 80 66 75" fill="none" stroke="#4a4036" stroke-width="2" stroke-linecap="round"/>
+                        
+                        <!-- 飄動小音符 -->
+                        <text x="95" y="25" font-size="16" fill="#e07a5f" font-weight="bold">♪ ♫</text>
+                    </svg>
                 </div>
                 <div id="catLabelText" style="font-weight: bold; color: #6b5b4e; font-size: 14px; margin-top: 5px;"></div>
             </div>
