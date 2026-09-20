@@ -39,7 +39,7 @@
         .header-btns { display: flex; justify-content: center; flex-wrap: nowrap; align-items: center; width: 100%; overflow-x: auto;}
 
         .room-header { border-bottom: 2px dashed #f2ede4; padding-bottom: 15px; margin-bottom: 20px; display: flex; flex-direction: column; align-items: center;}
-        #displayRoomId { font-size: 24px; font-weight: 900; color: #cf9366; margin: 0 0 10px 0; }
+        #displayRoomId { font-size: 32px; font-weight: 900; color: #cf9366; margin: 0 0 10px 0; letter-spacing: 4px;}
         .room-settings-info { width: 100%; font-size: 14px; color: #a39589; margin-top: 10px; font-weight: bold; }
         
         .player-list-item { font-size: 16px; font-weight: bold; padding: 12px 15px; margin: 8px 0; background: #faf8f5; border-radius: 12px; color: #7a6a5d; border: 1px solid #f2ede4; display: flex; justify-content: space-between; align-items: center; overflow: hidden; }
@@ -66,21 +66,12 @@
 
         #resultTitle { font-size: 32px; font-weight: 900; margin-bottom: 15px; }
         
-        .song-reveal-box {
-            background: #faf8f5; border: 1px solid #f2ede4; border-radius: 12px; 
-            padding: 15px; margin-bottom: 15px; text-align: left;
-        }
+        .song-reveal-box { background: #faf8f5; border: 1px solid #f2ede4; border-radius: 12px; padding: 15px; margin-bottom: 15px; text-align: left; }
         .eliminated-name { font-weight: bold; }
 
-        #toast {
-            visibility: hidden; min-width: 150px; max-width: 80%; background-color: #333; color: #fff;
-            text-align: center; border-radius: 8px; padding: 10px; position: fixed; z-index: 1000;
-            left: 50%; bottom: 30px; transform: translateX(-50%); font-size: 14px;
-            opacity: 0; transition: opacity 0.3s, bottom 0.3s; word-wrap: break-word; font-weight: bold;
-        }
+        #toast { visibility: hidden; min-width: 150px; max-width: 80%; background-color: #333; color: #fff; text-align: center; border-radius: 8px; padding: 10px; position: fixed; z-index: 1000; left: 50%; bottom: 30px; transform: translateX(-50%); font-size: 14px; opacity: 0; transition: opacity 0.3s, bottom 0.3s; word-wrap: break-word; font-weight: bold; }
         #toast.show { visibility: visible; opacity: 1; bottom: 50px; }
 
-        /* 💡 新增：下載進度清單樣式 */
         #downloadList { margin-top: 20px; text-align: left; background: #faf8f5; border-radius: 12px; padding: 15px; border: 1px solid #f2ede4; max-height: 200px; overflow-y: auto; }
         .dl-item { font-weight: bold; color: #7a6a5d; margin: 8px 0; display: flex; justify-content: space-between; border-bottom: 1px dashed #eaddcc; padding-bottom: 5px;}
         .dl-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0;}
@@ -96,7 +87,7 @@
             <div style="margin-top: 5px;"><button onclick="createRoom()">建立房間</button></div>
             <hr style="border: none; border-top: 2px dashed #f2ede4; margin: 30px 0;">
             <div style="display: flex; justify-content: center; gap: 10px; align-items: center;">
-                <input type="text" id="roomInput" placeholder="輸入4碼房間代號" style="width: 55%; margin-bottom: 0; text-transform: uppercase;">
+                <input type="number" id="roomInput" placeholder="輸入4碼房號" style="width: 55%; margin-bottom: 0;" inputmode="numeric" maxlength="4">
                 <button class="btn-secondary" style="margin: 0; white-space: nowrap;" onclick="joinRoom()">加入房間</button>
             </div>
         </div>
@@ -105,7 +96,8 @@
     <div id="roomScreen" class="container" style="display: none;">
         <div class="content-wrapper">
             <div class="room-header">
-                <h2 id="displayRoomId">房間：</h2>
+                <div class="label">房間代碼</div>
+                <div id="displayRoomId">----</div>
                 <div class="header-btns">
                     <button class="btn-outline btn-rank btn-sm" onclick="openRankModal()">玩家排行</button>
                     <button id="settingBtn" class="btn-outline btn-setting btn-sm" style="display: none;" onclick="openSettings()">遊戲設定</button>
@@ -126,7 +118,6 @@
             <h1 id="playStatusTitle" style="color: #cf9366;">音檔下載中...</h1>
             <p id="playStatusDesc" style="color: #a39589; font-weight: bold;">請確保手機音量已開啟</p>
             <div id="countdownNumber" style="display: none;">--</div>
-            <!-- 💡 新增：下載進度追蹤列表 -->
             <div id="downloadList" style="display: none;"></div>
         </div>
     </div>
@@ -135,7 +126,7 @@
         <div class="content-wrapper">
             <h1 style="color: #e07a5f;">討論與投票</h1>
             <p style="color: #a39589; font-weight: bold; margin: 0;">點擊頭像抓出臥底，再點可取消</p>
-            <div id="voteTimer">20</div>
+            <div id="voteTimer">--</div>
             <div id="voteGrid" class="vote-grid"></div>
         </div>
     </div>
@@ -146,14 +137,8 @@
             <p style="font-size: 18px; color: #a39589; font-weight: bold; margin-bottom: 20px;">本局臥底是：<span id="resultSpy" style="color: #cf9366; font-size: 24px;">--</span></p>
             
             <div class="song-reveal-box">
-                <div style="font-size: 14px; color: #a39589; margin-bottom: 8px;">
-                    🎵 平民聽的歌：<br>
-                    <span id="resultCivilianSong" style="color: #7a6a5d; font-weight: bold; font-size: 16px;">--</span>
-                </div>
-                <div style="font-size: 14px; color: #a39589;">
-                    🎧 臥底聽的歌：<br>
-                    <span id="resultUndercoverSong" style="color: #cf9366; font-weight: bold; font-size: 16px;">--</span>
-                </div>
+                <div style="font-size: 14px; color: #a39589; margin-bottom: 8px;">🎵 平民聽的歌：<br><span id="resultCivilianSong" style="color: #7a6a5d; font-weight: bold; font-size: 16px;">--</span></div>
+                <div style="font-size: 14px; color: #a39589;">🎧 臥底聽的歌：<br><span id="resultUndercoverSong" style="color: #cf9366; font-weight: bold; font-size: 16px;">--</span></div>
             </div>
 
             <p style="font-size: 16px; color: #7a6a5d; background: #faf8f5; padding: 10px; border-radius: 10px; margin-bottom: 20px;">
@@ -211,7 +196,6 @@
     </div>
 
     <div id="toast"></div>
-
     <audio id="bgm" preload="auto"></audio>
 
     <script>
@@ -220,22 +204,22 @@
         localStorage.setItem('music_spy_uid', myUserId);
         document.getElementById('nameInput').value = localStorage.getItem('music_spy_name') || '';
         let currentRoomId = null;
-        let playTimer = null;
-        let voteTimer = null;
+        let globalTimerInterval = null; 
         let myVoteTarget = null;
         let globalPlayers = {}; 
         let globalScores = {}; 
 
+        // 💡 前端狀態監聽：只通知伺服器你的狀態，所有決策交由伺服器
         document.addEventListener('visibilitychange', () => {
             if (document.hidden && currentRoomId) {
-                console.log("切換到背景，正在強制取消準備...");
-                socket.emit('cancel_ready', { roomId: currentRoomId, userId: myUserId });
+                socket.emit('go_background', { roomId: currentRoomId, userId: myUserId });
+            } else if (!document.hidden && currentRoomId) {
+                socket.emit('wake_up', { roomId: currentRoomId, userId: myUserId });
             }
         });
 
         socket.on('connect', () => {
             if (currentRoomId) {
-                console.log("偵測到重連！正在把你拉回房間...");
                 socket.emit('join_room', { roomId: currentRoomId, userId: myUserId, userName: getMyName() });
             }
         });
@@ -270,6 +254,20 @@
             });
         }
 
+        // 💡 絕對時間同步核心函數
+        function startGlobalTimer(endTime, elementId) {
+            clearInterval(globalTimerInterval);
+            const el = document.getElementById(elementId);
+            
+            const updateTimer = () => {
+                let remain = Math.ceil((endTime - Date.now()) / 1000);
+                if (remain <= 0) remain = 0;
+                el.innerText = remain;
+            };
+            updateTimer();
+            globalTimerInterval = setInterval(updateTimer, 200);
+        }
+
         function getMyName() {
             let name = document.getElementById('nameInput').value.trim();
             if (name === "") name = "飛天巴庫";
@@ -279,7 +277,7 @@
 
         function createRoom() { socket.emit('create_room', { userId: myUserId, userName: getMyName() }); }
         function joinRoom() {
-            const inputRoomId = document.getElementById('roomInput').value.trim().toUpperCase();
+            const inputRoomId = document.getElementById('roomInput').value.trim();
             if (!inputRoomId) return showAlert("請輸入房間碼！");
             socket.emit('join_room', { roomId: inputRoomId, userId: myUserId, userName: getMyName() });
         }
@@ -303,26 +301,21 @@
         function openRankModal() {
             const container = document.getElementById('rankListContainer');
             container.innerHTML = '';
-            
             const sortedPlayerIds = Object.keys(globalPlayers).sort((a, b) => {
-                const scoreA = globalScores[a] || 0;
-                const scoreB = globalScores[b] || 0;
-                return scoreB - scoreA; 
+                return (globalScores[b] || 0) - (globalScores[a] || 0); 
             });
 
             let rankIndex = 1;
             sortedPlayerIds.forEach(uid => {
                 const p = globalPlayers[uid];
                 const score = globalScores[uid] || 0;
-                
                 container.innerHTML += `
                     <div class="rank-item">
                         <div class="rank-name-box" onclick="showToast('${p.name}')">
                             <span style="color: #9cbca7; margin-right: 5px;">#${rankIndex}</span>${p.name}
                         </div>
                         <div class="rank-score-box">${score} 分</div>
-                    </div>
-                `;
+                    </div>`;
                 rankIndex++; 
             });
             document.getElementById('rankModal').style.display = 'flex';
@@ -330,29 +323,52 @@
 
         socket.on('error_msg', showAlert);
         
-        socket.on('room_destroyed', () => { 
-            showAlert("房主已解散房間或離開超過 30 秒！", () => { currentRoomId = null; switchView('homeScreen'); }); 
-        });
-
-        socket.on('kicked_out', () => {
-            showAlert("你已被房主請出房間！", () => { currentRoomId = null; switchView('homeScreen'); });
-        });
-
-        // 💡 15秒淘汰制：如果超時未下載完成被伺服器踢出，顯示此提示並退回首頁
-        socket.on('kicked_loading_timeout', () => {
-            showAlert("因為下載音樂超時，你已被移出房間！", () => { 
-                currentRoomId = null; 
-                switchView('homeScreen'); 
+        // 💡 統一處理被踢或房間解散，絕對返回首頁
+        socket.on('error_to_home', (msg) => {
+            showAlert(msg, () => {
+                currentRoomId = null;
+                switchView('homeScreen');
             });
+        });
+        
+        socket.on('room_destroyed', () => { 
+            showAlert("房主已解散房間或離開超過 60 秒！", () => { currentRoomId = null; switchView('homeScreen'); }); 
         });
 
         socket.on('room_joined', (roomId) => { currentRoomId = roomId; switchView('roomScreen'); });
 
+        // 💡 動態狀態機與畫面復原系統
         socket.on('room_state_update', (roomState) => {
             if (!currentRoomId) return;
-            if (document.getElementById('playingScreen').style.display === 'block' || document.getElementById('votingScreen').style.display === 'block') return; 
-            
-            document.getElementById('displayRoomId').innerText = '房間：' + currentRoomId;
+            globalPlayers = roomState.players; 
+            globalScores = roomState.scores; 
+
+            // 如果目前是在結算畫面，就不強制拉回其他畫面，除非重新發車 (LOADING)
+            if (document.getElementById('resultScreen').style.display === 'block') {
+                if (roomState.state === 'LOADING') {
+                    // 若房主新開一局，離開結算
+                } else {
+                    return; 
+                }
+            }
+
+            if (roomState.state === 'PLAYING') {
+                switchView('playingScreen');
+                document.getElementById('playStatusTitle').innerText = '仔細聽！';
+                document.getElementById('playStatusDesc').innerText = '找出那個音樂不一樣的騙子';
+                document.getElementById('downloadList').style.display = 'none';
+                document.getElementById('countdownNumber').style.display = 'block';
+                startGlobalTimer(roomState.phaseEndTime, 'countdownNumber');
+                return;
+            } else if (roomState.state === 'VOTING') {
+                switchView('votingScreen');
+                renderVoteGrid(roomState.players);
+                startGlobalTimer(roomState.phaseEndTime, 'voteTimer');
+                return;
+            }
+
+            // 以下為 LOBBY 或 LOADING 畫面的處理
+            document.getElementById('displayRoomId').innerText = currentRoomId;
             document.getElementById('displaySettings').innerText = `設定：${roomState.settings.duration}秒 | ${roomState.settings.category}`;
             document.getElementById('selectDuration').value = roomState.settings.duration;
             document.getElementById('selectCategory').value = roomState.settings.category;
@@ -361,8 +377,6 @@
             listDiv.innerHTML = ''; 
             let allReady = true; 
             let index = 1; 
-            globalPlayers = roomState.players; 
-            globalScores = roomState.scores; 
             
             const isHost = (roomState.hostId === myUserId);
             document.getElementById('leaveBtn').innerText = isHost ? '解散房間' : '退出房間';
@@ -370,16 +384,12 @@
 
             Object.keys(roomState.players).forEach(uid => {
                 const p = roomState.players[uid];
-                
                 const hostText = (uid === roomState.hostId) ? '<span style="font-size: 12px; color: #cf9366; margin-left: 4px;">(房主)</span>' : '';
                 let statusText = p.status !== 'ONLINE' ? '<span style="color: #e07a5f;">斷線中</span>' : 
                                  p.isReady ? '<span style="color: #9cbca7;">準備完成</span>' : '<span style="color: #c7bcae;">準備中</span>';
                 if (p.status === 'ONLINE' && !p.isReady) allReady = false; 
 
-                let kickButtonHtml = '';
-                if (isHost && uid !== myUserId) {
-                    kickButtonHtml = `<button class="btn-kick" onclick="kickPlayer('${uid}')">踢出</button>`;
-                }
+                let kickButtonHtml = (isHost && uid !== myUserId) ? `<button class="btn-kick" onclick="kickPlayer('${uid}')">踢出</button>` : '';
 
                 listDiv.innerHTML += `
                     <div class="player-list-item">
@@ -388,11 +398,8 @@
                             <span class="player-name-text" onclick="showToast('${p.name}')">${p.name}</span>
                             <div style="flex-shrink: 0;">${hostText}</div>
                         </div>
-                        <div class="player-status-right">
-                            ${statusText} ${kickButtonHtml}
-                        </div>
-                    </div>
-                `;
+                        <div class="player-status-right">${statusText} ${kickButtonHtml}</div>
+                    </div>`;
                 index++;
             });
 
@@ -419,7 +426,6 @@
             document.getElementById('playStatusDesc').innerText = '請確保手機音量開啟';
             document.getElementById('countdownNumber').style.display = 'none';
             
-            // 💡 生成下載進度清單
             const dlList = document.getElementById('downloadList');
             dlList.style.display = 'block';
             dlList.innerHTML = '';
@@ -432,13 +438,13 @@
             }
         });
 
-        // 💡 接收伺服器廣播，更新個別玩家的下載狀態
         socket.on('PLAYER_LOADED', (uid) => {
             const el = document.getElementById('dl_' + uid);
             if(el && globalPlayers[uid]) {
+                // 💡 移除 Emoji
                 el.innerHTML = `
                     <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 10px;">${globalPlayers[uid].name}</span>
-                    <span style="color:#9cbca7; flex-shrink: 0;">已就緒 ✅</span>`;
+                    <span style="color:#9cbca7; flex-shrink: 0;">已就緒</span>`;
             }
         });
 
@@ -453,47 +459,24 @@
             };
         });
 
-        socket.on('START_PLAYING', (duration) => {
-            document.getElementById('playStatusTitle').innerText = '仔細聽！';
-            document.getElementById('playStatusDesc').innerText = '找出那個音樂不一樣的騙子';
-            document.getElementById('downloadList').style.display = 'none';
-            document.getElementById('countdownNumber').style.display = 'block';
-            
+        socket.on('START_PLAYING_MUSIC', () => {
             const audio = document.getElementById('bgm');
             audio.currentTime = 0; 
             audio.play().catch(e => console.error(e));
-            
-            let timeLeft = duration;
-            document.getElementById('countdownNumber').innerText = timeLeft;
-            playTimer = setInterval(() => {
-                timeLeft--;
-                document.getElementById('countdownNumber').innerText = timeLeft;
-                if(timeLeft <= 0) { clearInterval(playTimer); audio.pause(); }
-            }, 1000);
         });
 
-        socket.on('START_VOTING', () => {
-            switchView('votingScreen');
-            myVoteTarget = null;
-            
+        function renderVoteGrid(players) {
             const grid = document.getElementById('voteGrid');
             grid.innerHTML = '';
-            for (const uid in globalPlayers) {
+            for (const uid in players) {
                 const btn = document.createElement('button');
                 btn.className = 'vote-btn';
-                btn.innerText = globalPlayers[uid].name;
+                btn.innerText = players[uid].name;
                 btn.onclick = () => handleVoteClick(uid, btn);
+                if (myVoteTarget === uid) btn.classList.add('selected'); 
                 grid.appendChild(btn);
             }
-
-            let vTime = 20; 
-            document.getElementById('voteTimer').innerText = vTime;
-            voteTimer = setInterval(() => {
-                vTime--;
-                document.getElementById('voteTimer').innerText = vTime;
-                if(vTime <= 0) clearInterval(voteTimer);
-            }, 1000);
-        });
+        }
 
         function handleVoteClick(uid, btnElement) {
             if (myVoteTarget === uid) {
@@ -508,6 +491,9 @@
         }
 
         socket.on('GAME_RESULT', ({ winner, eliminatedData, undercoverName, civilianSong, undercoverSong }) => {
+            clearInterval(globalTimerInterval);
+            myVoteTarget = null; 
+            
             switchView('resultScreen');
             
             const title = document.getElementById('resultTitle');

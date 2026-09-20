@@ -4,7 +4,6 @@ const http = require('http').createServer(app);
 const io = require('socket.io')(http);
 
 const rooms = {}; 
-const disconnectTimers = {}; 
 
 const POOLS = {
   '華語流行': [
@@ -15,7 +14,7 @@ const POOLS = {
     "韋禮安 如果可以", "韋禮安 慢慢等", "韋禮安 還是會", "韋禮安 女孩", "韋禮安 因為是你",
     "周興哲 以後別做朋友", "周興哲 你，好不好", "周興哲 怎麼了", "周興哲 如果雨之後", "周興哲 永不失聯的愛",
     "八三夭 想見你想見你想見你", "八三夭 東區東區", "八三夭 顛倒世界", "八三夭 我不想改變世界我只想不被世界改變", "八三夭 致青春",
-    "茄子蛋 閣愛妳一擺", "茄子蛋 浪子回頭", "茄子蛋 浪流連", "茄子蛋 愛情你比我想的閣較偉大", "茄子蛋 這款自作多情",
+    "茄子蛋 閣愛妳一擺", "茄子蛋 浪子回頭", "茄子蛋 浪流連", "茄子蛋 愛情你比我想的閣較偉大", "茄子蛋 恰似你的溫柔",
     "田馥甄 小幸運", "田馥甄 魔鬼中的天使", "田馥甄 寂寞寂寞就好", "田馥甄 日常", "田馥甄 無人知曉",
     "陳奕迅 孤勇者", "陳奕迅 十年", "陳奕迅 愛情轉移", "陳奕迅 淘汰", "陳奕迅 浮誇"
   ],
@@ -29,7 +28,7 @@ const POOLS = {
     "LE SSERAFIM UNFORGIVEN", "LE SSERAFIM ANTIFRAGILE", "LE SSERAFIM FEARLESS", "LE SSERAFIM Perfect Night", "LE SSERAFIM Eve Psyche",
     "(G)I-DLE Nxde", "(G)I-DLE TOMBOY", "(G)I-DLE Queencard", "(G)I-DLE LATATA", "(G)I-DLE Super Lady",
     "SEVENTEEN Super", "SEVENTEEN HOT", "SEVENTEEN Don't Wanna Cry", "SEVENTEEN VERY NICE", "SEVENTEEN Clap",
-    "Stray Kids God's Menu", "Stray Kids MANIAC", "Stray Kids S-Class", "ITZY WANNABE", "JUNG KOOK Seven"
+    "Stray Kids God's Menu", "Stray Kids MANIAC", "Stray Kids S-Class", "ITZY WANNABE", "Jungkook Seven"
   ],
   '動漫神曲': [
     "YOASOBI アイドル", "YOASOBI 夜に駆ける", "YOASOBI 怪物", "YOASOBI 祝福", "YOASOBI 群青",
@@ -71,26 +70,104 @@ async function fetchAppleMusicPreview(keyword) {
 
 app.get('/', (req, res) => { res.sendFile(__dirname + '/index.html'); });
 
-// 💡 獨立出發車函數，方便大家準備好或超時強制呼叫
-function startGamePlay(roomId) {
+// 💡 統一的玩家移除與轉移房主機制
+function removePlayer(roomId, userId, kickMsg = null) {
   const room = rooms[roomId];
-  if (!room) return;
-  if (room.loadingTimeout) {
-    clearTimeout(room.loadingTimeout);
-    room.loadingTimeout = null;
+  if (!room || !room.players[userId]) return;
+
+  if (kickMsg && room.players[userId].socketId) {
+    io.to(room.players[userId].socketId).emit('error_to_home', kickMsg);
+  }
+
+  delete room.players[userId];
+  delete room.scores[userId];
+  delete room.votes[userId];
+
+  const remaining = Object.keys(room.players);
+  if (remaining.length === 0) {
+    delete rooms[roomId];
+  } else {
+    if (room.hostId === userId) {
+      room.hostId = remaining[0]; 
+    }
+    io.to(roomId).emit('room_state_update', room);
+  }
+}
+
+// 💡 統一的玩家離線處理器 (依據狀態決定 10 秒還是 60 秒炸彈)
+function handlePlayerOffline(roomId, userId) {
+  const room = rooms[roomId];
+  if (!room || !room.players[userId]) return;
+  
+  const p = room.players[userId];
+  p.status = 'OFFLINE';
+  if (p.offlineTimer) clearTimeout(p.offlineTimer);
+
+  if (room.state === 'LOADING') {
+    // 下載階段：10秒生死線，超時強制踢回大廳
+    p.offlineTimer = setTimeout(() => {
+      removePlayer(roomId, userId, '下載音樂超時，你已被移出房間！');
+      checkDownloadProgress(roomId);
+    }, 10000);
+  } else {
+    // 遊戲/大廳階段：寬鬆放養 60 秒徹底幽靈清除
+    if (room.state === 'LOBBY') p.isReady = false;
+    p.offlineTimer = setTimeout(() => {
+      removePlayer(roomId, userId, '閒置過久，已自動退出房間。');
+    }, 60000);
+  }
+  io.to(roomId).emit('room_state_update', room);
+}
+
+// 💡 統一的玩家回歸處理器
+function handlePlayerOnline(roomId, userId, socketId) {
+  const room = rooms[roomId];
+  if (!room || !room.players[userId]) return false; // 回來時如果已被踢除，回傳 false
+  
+  const p = room.players[userId];
+  p.status = 'ONLINE';
+  p.socketId = socketId;
+  
+  if (p.offlineTimer) {
+    clearTimeout(p.offlineTimer);
+    p.offlineTimer = null;
   }
   
-  room.state = 'PLAYING';
-  io.to(roomId).emit('START_PLAYING', room.settings.duration);
-  io.to(roomId).emit('room_state_update', room); 
+  io.to(roomId).emit('room_state_update', room);
+  if (room.state === 'LOADING') checkDownloadProgress(roomId);
+  return true;
+}
 
-  setTimeout(() => {
-    if(rooms[roomId]) {
-      rooms[roomId].state = 'VOTING';
-      io.to(roomId).emit('START_VOTING');
-      setTimeout(() => { calculateVotes(roomId); }, 20000 + 1000); 
-    }
-  }, room.settings.duration * 1000 + 1000);
+function checkDownloadProgress(roomId) {
+  const room = rooms[roomId];
+  if (!room || room.state !== 'LOADING') return;
+  
+  const playerIds = Object.keys(room.players);
+  if (playerIds.length === 0) return;
+
+  // 只要「還留在房間內」的人全部載好就發車 (中途切出但未滿 10 秒的人，也會等他)
+  const allLoaded = playerIds.every(uid => room.players[uid].isLoaded);
+  
+  if (allLoaded) {
+    if (room.globalLoadingTimeout) clearTimeout(room.globalLoadingTimeout);
+    
+    room.state = 'PLAYING';
+    room.phaseEndTime = Date.now() + (room.settings.duration * 1000); // 💡 絕對時間戳
+    io.to(roomId).emit('room_state_update', room);
+    io.to(roomId).emit('START_PLAYING_MUSIC');
+    
+    room.playTimeout = setTimeout(() => {
+      if(rooms[roomId]) {
+        rooms[roomId].state = 'VOTING';
+        rooms[roomId].phaseEndTime = Date.now() + 20000;
+        io.to(roomId).emit('room_state_update', rooms[roomId]);
+        
+        rooms[roomId].votingTimeout = setTimeout(() => {
+          calculateVotes(roomId);
+        }, 20000); 
+      }
+    }, room.settings.duration * 1000);
+  }
 }
 
 io.on('connection', (socket) => {
@@ -98,18 +175,18 @@ io.on('connection', (socket) => {
 
   socket.on('create_room', ({ userId, userName }) => {
     const finalName = userName || '飛天巴庫';
-    const roomId = Math.random().toString(36).substring(2, 6).toUpperCase(); 
+    // 💡 房號改為純 4 碼數字
+    const roomId = Math.floor(1000 + Math.random() * 9000).toString(); 
 
     rooms[roomId] = { 
       hostId: userId, state: 'LOBBY', players: {},
       settings: { duration: 15, category: '混合隨機' }, 
       undercoverId: null, votes: {},
       civilianSong: '', undercoverSong: '',
-      playedSongs: [],
-      scores: {},
-      loadingTimeout: null
+      playedSongs: [], scores: {},
+      phaseEndTime: null, playTimeout: null, votingTimeout: null, globalLoadingTimeout: null
     };
-    rooms[roomId].players[userId] = { name: finalName, socketId: socket.id, status: 'ONLINE', isReady: false, isLoaded: false };
+    rooms[roomId].players[userId] = { name: finalName, socketId: socket.id, status: 'ONLINE', isReady: false, isLoaded: false, offlineTimer: null };
     rooms[roomId].scores[userId] = 0; 
 
     socket.join(roomId);
@@ -119,17 +196,13 @@ io.on('connection', (socket) => {
 
   socket.on('join_room', ({ roomId, userId, userName }) => {
     const room = rooms[roomId];
-    if (!room) return socket.emit('error_msg', '找不到這個房間碼！');
+    if (!room) return socket.emit('error_to_home', '找不到這個房間碼！');
 
     if (room.players[userId]) {
-      clearTimeout(disconnectTimers[userId]); 
-      room.players[userId].socketId = socket.id; 
-      room.players[userId].status = 'ONLINE';
+      handlePlayerOnline(roomId, userId, socket.id);
     } else {
-      if (room.state !== 'LOBBY') {
-        return socket.emit('error_msg', '遊戲正在進行中，無法加入！');
-      }
-      room.players[userId] = { name: userName || '飛天巴庫', socketId: socket.id, status: 'ONLINE', isReady: false, isLoaded: false };
+      if (room.state !== 'LOBBY') return socket.emit('error_msg', '遊戲正在進行中，無法加入！');
+      room.players[userId] = { name: userName || '飛天巴庫', socketId: socket.id, status: 'ONLINE', isReady: false, isLoaded: false, offlineTimer: null };
       if (room.scores[userId] === undefined) room.scores[userId] = 0; 
     }
     socket.join(roomId);
@@ -137,31 +210,35 @@ io.on('connection', (socket) => {
     io.to(roomId).emit('room_state_update', room);
   });
 
-  socket.on('leave_room', ({ roomId, userId }) => {
-    const room = rooms[roomId];
-    if (room && room.players[userId]) {
-      if (room.hostId === userId) {
-        io.to(roomId).emit('room_destroyed');
-        delete rooms[roomId];
-      } else {
-        delete room.players[userId];
-        delete room.scores[userId]; 
-        socket.leave(roomId);
-        io.to(roomId).emit('room_state_update', room);
+  socket.on('wake_up', ({ roomId, userId }) => {
+    const success = handlePlayerOnline(roomId, userId, socket.id);
+    if (!success) socket.emit('error_to_home', '你已被移出房間或房間已解散！');
+  });
+
+  socket.on('go_background', ({ roomId, userId }) => {
+    handlePlayerOffline(roomId, userId);
+  });
+
+  socket.on('disconnect', () => {
+    for (const roomId in rooms) {
+      const room = rooms[roomId];
+      for (const userId in room.players) {
+        if (room.players[userId].socketId === socket.id) {
+          handlePlayerOffline(roomId, userId);
+          break;
+        }
       }
     }
+  });
+
+  socket.on('leave_room', ({ roomId, userId }) => {
+    removePlayer(roomId, userId);
   });
 
   socket.on('kick_player', ({ roomId, targetUserId, hostId }) => {
     const room = rooms[roomId];
     if (room && room.hostId === hostId) {
-      if (room.players[targetUserId]) {
-        const targetSocketId = room.players[targetUserId].socketId;
-        delete room.players[targetUserId];
-        delete room.scores[targetUserId];
-        io.to(targetSocketId).emit('kicked_out');
-        io.to(roomId).emit('room_state_update', room);
-      }
+      removePlayer(roomId, targetUserId, '你已被房主請出房間！');
     }
   });
 
@@ -237,28 +314,16 @@ io.on('connection', (socket) => {
         io.to(room.players[uid].socketId).emit('PRELOAD_MUSIC', targetUrl);
       });
 
-      // 💡 15 秒超時淘汰機制
-      room.loadingTimeout = setTimeout(() => {
+      // 💡 全局 15秒 極限發車防護網
+      room.globalLoadingTimeout = setTimeout(() => {
         const currentRoom = rooms[roomId];
         if (currentRoom && currentRoom.state === 'LOADING') {
-            const pids = Object.keys(currentRoom.players);
-            pids.forEach(uid => {
+            Object.keys(currentRoom.players).forEach(uid => {
                 if (!currentRoom.players[uid].isLoaded) {
-                    io.to(currentRoom.players[uid].socketId).emit('kicked_loading_timeout');
-                    delete currentRoom.players[uid];
-                    delete currentRoom.scores[uid];
+                    removePlayer(roomId, uid, '下載音樂超時，你已被移出房間！');
                 }
             });
-
-            const remaining = Object.keys(currentRoom.players);
-            if (remaining.length === 0) {
-                delete rooms[roomId];
-            } else {
-                if (!currentRoom.players[currentRoom.hostId]) {
-                    currentRoom.hostId = remaining[0]; 
-                }
-                startGamePlay(roomId);
-            }
+            checkDownloadProgress(roomId);
         }
       }, 15000);
     }
@@ -268,12 +333,8 @@ io.on('connection', (socket) => {
     const room = rooms[roomId];
     if (room && room.players[userId]) {
       room.players[userId].isLoaded = true;
-      io.to(roomId).emit('PLAYER_LOADED', userId); // 💡 即時更新前端名單
-      
-      const allLoaded = Object.values(room.players).every(p => p.isLoaded);
-      if (allLoaded && room.state === 'LOADING') {
-        startGamePlay(roomId);
-      }
+      io.to(roomId).emit('PLAYER_LOADED', userId);
+      checkDownloadProgress(roomId);
     }
   });
 
@@ -290,10 +351,10 @@ io.on('connection', (socket) => {
     if (!room) return;
 
     room.state = 'LOBBY';
+    room.phaseEndTime = null;
 
     let voteCounts = {};
     for (let voter in room.votes) {
-      // 💡 無痛重連：就算他短暫斷線，他送出的票一樣有效
       let target = room.votes[voter];
       if (room.players[target]) { 
         voteCounts[target] = (voteCounts[target] || 0) + 1;
@@ -316,7 +377,7 @@ io.on('connection', (socket) => {
     const undercoverDied = eliminated.includes(room.undercoverId);
     const winner = undercoverDied ? '平民勝利' : '臥底勝利';
     
-    // 💡 安全防護：使用 || 0 確保不會出現 NaN 導致 502 崩潰
+    // 💡 防止 NaN 引發伺服器 502 崩潰的安全寫法
     if (winner === '平民勝利') {
       Object.keys(room.players).forEach(uid => {
         if (uid !== room.undercoverId) {
@@ -348,36 +409,6 @@ io.on('connection', (socket) => {
     io.to(roomId).emit('room_state_update', room);
   }
 
-  socket.on('disconnect', () => {
-    for (const roomId in rooms) {
-      const room = rooms[roomId];
-      for (const userId in room.players) {
-        if (room.players[userId].socketId === socket.id) {
-          
-          room.players[userId].status = 'OFFLINE';
-          room.players[userId].isReady = false; 
-          io.to(roomId).emit('room_state_update', room); 
-          
-          disconnectTimers[userId] = setTimeout(() => {
-            if (room.players[userId]) {
-              delete room.players[userId];
-              delete room.scores[userId];
-              
-              if (room.hostId === userId) {
-                io.to(roomId).emit('room_destroyed');
-                delete rooms[roomId];
-              } else {
-                io.to(roomId).emit('room_state_update', room); 
-                if (Object.keys(room.players).length === 0) delete rooms[roomId];
-              }
-            }
-          }, 30000); 
-          
-          break;
-        }
-      }
-    }
-  });
 });
 
 http.listen(3000, () => console.log('伺服器在 port 3000 苟延殘喘中'));
