@@ -79,6 +79,11 @@
             opacity: 0; transition: opacity 0.3s, bottom 0.3s; word-wrap: break-word; font-weight: bold;
         }
         #toast.show { visibility: visible; opacity: 1; bottom: 50px; }
+
+        /* 💡 新增：下載進度清單樣式 */
+        #downloadList { margin-top: 20px; text-align: left; background: #faf8f5; border-radius: 12px; padding: 15px; border: 1px solid #f2ede4; max-height: 200px; overflow-y: auto; }
+        .dl-item { font-weight: bold; color: #7a6a5d; margin: 8px 0; display: flex; justify-content: space-between; border-bottom: 1px dashed #eaddcc; padding-bottom: 5px;}
+        .dl-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0;}
     </style>
 </head>
 <body>
@@ -87,7 +92,6 @@
         <div class="content-wrapper">
             <h1>音樂臥底</h1>
             <span class="label">輸入暱稱</span>
-            <!-- 💡 預設名稱修正 -->
             <input type="text" id="nameInput" placeholder="預設: 飛天巴庫">
             <div style="margin-top: 5px;"><button onclick="createRoom()">建立房間</button></div>
             <hr style="border: none; border-top: 2px dashed #f2ede4; margin: 30px 0;">
@@ -121,7 +125,9 @@
         <div class="content-wrapper">
             <h1 id="playStatusTitle" style="color: #cf9366;">音檔下載中...</h1>
             <p id="playStatusDesc" style="color: #a39589; font-weight: bold;">請確保手機音量已開啟</p>
-            <div id="countdownNumber">--</div>
+            <div id="countdownNumber" style="display: none;">--</div>
+            <!-- 💡 新增：下載進度追蹤列表 -->
+            <div id="downloadList" style="display: none;"></div>
         </div>
     </div>
 
@@ -220,9 +226,7 @@
         let globalPlayers = {}; 
         let globalScores = {}; 
 
-        // 💡 新增：切換 APP 秒取消準備
         document.addEventListener('visibilitychange', () => {
-            // 當網頁被縮小隱藏，且人還在房間裡時
             if (document.hidden && currentRoomId) {
                 console.log("切換到背景，正在強制取消準備...");
                 socket.emit('cancel_ready', { roomId: currentRoomId, userId: myUserId });
@@ -268,7 +272,6 @@
 
         function getMyName() {
             let name = document.getElementById('nameInput').value.trim();
-            // 💡 預設名稱修正
             if (name === "") name = "飛天巴庫";
             localStorage.setItem('music_spy_name', name);
             return name;
@@ -333,6 +336,14 @@
 
         socket.on('kicked_out', () => {
             showAlert("你已被房主請出房間！", () => { currentRoomId = null; switchView('homeScreen'); });
+        });
+
+        // 💡 15秒淘汰制：如果超時未下載完成被伺服器踢出，顯示此提示並退回首頁
+        socket.on('kicked_loading_timeout', () => {
+            showAlert("因為下載音樂超時，你已被移出房間！", () => { 
+                currentRoomId = null; 
+                switchView('homeScreen'); 
+            });
         });
 
         socket.on('room_joined', (roomId) => { currentRoomId = roomId; switchView('roomScreen'); });
@@ -406,7 +417,29 @@
             switchView('playingScreen');
             document.getElementById('playStatusTitle').innerText = '音檔下載中...';
             document.getElementById('playStatusDesc').innerText = '請確保手機音量開啟';
-            document.getElementById('countdownNumber').innerText = '--';
+            document.getElementById('countdownNumber').style.display = 'none';
+            
+            // 💡 生成下載進度清單
+            const dlList = document.getElementById('downloadList');
+            dlList.style.display = 'block';
+            dlList.innerHTML = '';
+            for(let uid in globalPlayers) {
+                dlList.innerHTML += `
+                    <div class="dl-item" id="dl_${uid}">
+                        <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 10px;">${globalPlayers[uid].name}</span>
+                        <span style="color:#e07a5f; flex-shrink: 0;">下載中...</span>
+                    </div>`;
+            }
+        });
+
+        // 💡 接收伺服器廣播，更新個別玩家的下載狀態
+        socket.on('PLAYER_LOADED', (uid) => {
+            const el = document.getElementById('dl_' + uid);
+            if(el && globalPlayers[uid]) {
+                el.innerHTML = `
+                    <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 10px;">${globalPlayers[uid].name}</span>
+                    <span style="color:#9cbca7; flex-shrink: 0;">已就緒 ✅</span>`;
+            }
         });
 
         socket.on('PRELOAD_MUSIC', (url) => {
@@ -414,7 +447,7 @@
             audio.src = url; audio.load();
             audio.oncanplaythrough = () => {
                 audio.oncanplaythrough = null; 
-                document.getElementById('playStatusTitle').innerText = '下載完成';
+                document.getElementById('playStatusTitle').innerText = '你已下載完成';
                 document.getElementById('playStatusDesc').innerText = '等待其他人載入...';
                 socket.emit('music_loaded', { roomId: currentRoomId, userId: myUserId });
             };
@@ -423,6 +456,8 @@
         socket.on('START_PLAYING', (duration) => {
             document.getElementById('playStatusTitle').innerText = '仔細聽！';
             document.getElementById('playStatusDesc').innerText = '找出那個音樂不一樣的騙子';
+            document.getElementById('downloadList').style.display = 'none';
+            document.getElementById('countdownNumber').style.display = 'block';
             
             const audio = document.getElementById('bgm');
             audio.currentTime = 0; 
