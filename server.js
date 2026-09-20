@@ -3,7 +3,6 @@ const app = express();
 const http = require('http').createServer(app);
 const io = require('socket.io')(http);
 
-// 💡 終極防禦：防止未預期的錯誤造成 502 崩潰
 process.on('uncaughtException', (err) => { console.error('未捕獲的錯誤:', err); });
 process.on('unhandledRejection', (reason) => { console.error('未處理的 Promise 拒絕:', reason); });
 
@@ -191,7 +190,7 @@ function checkDownloadProgress(roomId) {
     room.playTimeout = setTimeout(() => {
       if(rooms[roomId]) {
         rooms[roomId].state = 'VOTING';
-        rooms[roomId].phaseEndTime = Date.now() + 20000;
+        room.phaseEndTime = Date.now() + 20000;
         broadcastRoomState(roomId);
         
         rooms[roomId].votingTimeout = setTimeout(() => {
@@ -202,11 +201,13 @@ function checkDownloadProgress(roomId) {
   }
 }
 
-// 💡 獨立到外層全域的計票結算函式
 function calculateVotes(roomId) {
   try {
     const room = rooms[roomId];
     if (!room) return;
+
+    if (room.playTimeout) clearTimeout(room.playTimeout);
+    if (room.votingTimeout) clearTimeout(room.votingTimeout);
 
     room.state = 'LOBBY';
     room.phaseEndTime = null;
@@ -254,6 +255,16 @@ function calculateVotes(roomId) {
     
     const undercoverName = room.players[room.undercoverId]?.name || '未知';
 
+    // 記錄歷史歌單
+    if (!room.historyList) room.historyList = [];
+    room.historyList.push({
+      round: room.historyList.length + 1,
+      category: room.settings.category,
+      civilianSong: room.civilianSong,
+      undercoverSong: room.undercoverSong,
+      winner: winner
+    });
+
     const resultData = { winner, eliminatedData, undercoverName, civilianSong: room.civilianSong, undercoverSong: room.undercoverSong };
     room.lastResult = resultData;
 
@@ -277,7 +288,7 @@ io.on('connection', (socket) => {
       settings: { duration: 15, category: '混合隨機' }, 
       undercoverId: null, votes: {},
       civilianSong: '', undercoverSong: '',
-      playedSongs: [], scores: {}, lastResult: null,
+      playedSongs: [], scores: {}, lastResult: null, historyList: [],
       phaseEndTime: null, playTimeout: null, votingTimeout: null, globalLoadingTimeout: null,
       singlePlayerIdleTimer: null
     };
@@ -443,9 +454,30 @@ io.on('connection', (socket) => {
 
   socket.on('submit_vote', ({ roomId, userId, targetId }) => {
     const room = rooms[roomId];
-    if (room) {
-      if (targetId === null) delete room.votes[userId]; 
-      else room.votes[userId] = targetId;
+    if (!room || room.state !== 'VOTING') return;
+
+    if (targetId === null) delete room.votes[userId]; 
+    else room.votes[userId] = targetId;
+
+    io.to(roomId).emit('vote_status_update', {
+      votedCount: Object.keys(room.votes).length,
+      totalCount: Object.keys(room.players).length
+    });
+
+    // 💡 3-2-1 快速通關邏輯：當所有在線玩家都投完票時，將剩餘時間縮短至 3 秒
+    const onlinePlayers = Object.keys(room.players).filter(uid => room.players[uid].status === 'ONLINE');
+    const votedOnlineCount = onlinePlayers.filter(uid => room.votes[uid] !== undefined).length;
+
+    if (votedOnlineCount >= onlinePlayers.length && onlinePlayers.length > 0) {
+      const fastEndRemaining = 3000; // 3 秒
+      room.phaseEndTime = Date.now() + fastEndRemaining;
+      
+      if (room.votingTimeout) clearTimeout(room.votingTimeout);
+      room.votingTimeout = setTimeout(() => {
+        calculateVotes(roomId);
+      }, fastEndRemaining);
+
+      broadcastRoomState(roomId);
     }
   });
 });
