@@ -6,6 +6,9 @@ const io = require('socket.io')(http);
 process.on('uncaughtException', (err) => { console.error('未捕獲的錯誤:', err); });
 process.on('unhandledRejection', (reason) => { console.error('未處理的 Promise 拒絕:', reason); });
 
+// 💡 關鍵：允許伺服器讀取同資料夾下的圖片等靜態檔案
+app.use(express.static(__dirname));
+
 const rooms = {}; 
 
 const POOLS = {
@@ -454,11 +457,11 @@ io.on('connection', (socket) => {
     }
   });
 
-  // 💡 嚴格檢測全員投票 + 防手賤鎖定開關
+  // 💡 嚴格檢測：必須全部在線玩家都投票才開始 3 秒倒數，且倒數中鎖定不允許改投重置
   socket.on('submit_vote', ({ roomId, userId, targetId }) => {
     const room = rooms[roomId];
     if (!room || room.state !== 'VOTING') return;
-    if (room.isVotingLocked) return; // 倒數中鎖定，拒絕任何改選或取消
+    if (room.isVotingLocked) return; 
 
     if (targetId === null) delete room.votes[userId]; 
     else room.votes[userId] = targetId;
@@ -471,10 +474,9 @@ io.on('connection', (socket) => {
       totalCount: onlinePlayers.length
     });
 
-    // 嚴格檢測：必須是「所有線上玩家」都投完票才啟動 3 秒倒數
     if (votedOnlineCount >= onlinePlayers.length && onlinePlayers.length > 0) {
-      room.isVotingLocked = true; // 鎖定投票，杜絕後續改票重置計時
-      const fastEndRemaining = 3000; // 3 秒
+      room.isVotingLocked = true; 
+      const fastEndRemaining = 3000; 
       room.phaseEndTime = Date.now() + fastEndRemaining;
       
       if (room.votingTimeout) clearTimeout(room.votingTimeout);
@@ -487,4 +489,5 @@ io.on('connection', (socket) => {
   });
 });
 
-http.listen(3000, () => console.log('伺服器在 port 3000 苟延殘喘中'));
+const PORT = process.env.PORT || 3000;
+http.listen(PORT, () => console.log(`伺服器正在 port ${PORT} 運行中`));
