@@ -71,36 +71,37 @@ async function fetchAppleMusicPreview(keyword) {
 
 app.get('/', (req, res) => { res.sendFile(__dirname + '/index.html'); });
 
-// 💡 修正：只檢查「在線 (`ONLINE`)」的玩家是否都下載完成
+// 💡 新增：集中管理檢查「所有玩家」下載進度的邏輯
 function checkDownloadProgress(roomId) {
   const room = rooms[roomId];
   if (!room || room.state !== 'LOADING') return;
   
-  const players = Object.values(room.players);
-  if (players.length === 0) return;
+  const playerIds = Object.keys(room.players);
+  if (playerIds.length === 0) return;
 
-  const onlinePlayers = players.filter(p => p.status === 'ONLINE');
-  const allLoaded = onlinePlayers.length > 0 && onlinePlayers.every(p => p.isLoaded);
+  // 💡 不管是 ONLINE 還是 OFFLINE，只要人在房間裡，我們就等他載好！
+  const allLoaded = playerIds.every(uid => room.players[uid].isLoaded);
   
   if (allLoaded) {
-    if (room.loadingTimeout) clearTimeout(room.loadingTimeout);
-    
     room.state = 'PLAYING';
+    // 💡 絕對時間同步：紀錄這個階段在未來的幾點幾分會結束
     room.phaseEndTime = Date.now() + (room.settings.duration * 1000);
     io.to(roomId).emit('room_state_update', room);
+    
+    // 通知所有人開始放音樂
     io.to(roomId).emit('START_PLAYING_MUSIC');
     
-    room.playTimeout = setTimeout(() => {
+    setTimeout(() => {
       if(rooms[roomId]) {
         rooms[roomId].state = 'VOTING';
         rooms[roomId].phaseEndTime = Date.now() + 20000;
         io.to(roomId).emit('room_state_update', rooms[roomId]);
         
-        room.votingTimeout = setTimeout(() => {
+        setTimeout(() => {
           calculateVotes(roomId);
-        }, 20000 + 500); 
+        }, 20000 + 1000); 
       }
-    }, room.settings.duration * 1000 + 500);
+    }, room.settings.duration * 1000 + 1000);
   }
 }
 
@@ -118,10 +119,7 @@ io.on('connection', (socket) => {
       civilianSong: '', undercoverSong: '',
       playedSongs: [],
       scores: {},
-      phaseEndTime: null,
-      loadingTimeout: null,
-      playTimeout: null,
-      votingTimeout: null
+      phaseEndTime: null // 用來存放階段倒數的絕對時間戳
     };
     rooms[roomId].players[userId] = { name: finalName, socketId: socket.id, status: 'ONLINE', isReady: false, isLoaded: false };
     rooms[roomId].scores[userId] = 0; 
@@ -156,11 +154,6 @@ io.on('connection', (socket) => {
         room.players[userId].socketId = socket.id; 
         room.players[userId].status = 'ONLINE';
         io.to(roomId).emit('room_state_update', room);
-        
-        // 喚醒時如果是下載階段，立刻重新檢查進度
-        if (room.state === 'LOADING') {
-            checkDownloadProgress(roomId);
-        }
     }
   });
 
@@ -214,10 +207,8 @@ io.on('connection', (socket) => {
         room.players[userId].status = 'OFFLINE';
         if (room.state === 'LOBBY') {
             room.players[userId].isReady = false; 
-        } else if (room.state === 'LOADING') {
-            // 💡 如果在下載途中切畫面，立刻重新檢查，避免卡住其他人
-            checkDownloadProgress(roomId);
         }
+        // 如果在遊戲中切到背景，我們就只標記他為 OFFLINE，不再踢出資格
         io.to(roomId).emit('room_state_update', room);
     }
   });
@@ -225,7 +216,7 @@ io.on('connection', (socket) => {
   socket.on('start_game', async ({ roomId, userId }) => {
     const room = rooms[roomId];
     if (room && room.hostId === userId) {
-      room.state = 'LOADING'; 
+      room.state = 'LOADING'; // 💡 新增 LOADING 階段
       room.phaseEndTime = null;
       room.votes = {}; 
       
@@ -271,20 +262,11 @@ io.on('connection', (socket) => {
       
       io.to(roomId).emit('room_state_update', room);
 
+      // 通知前端開始預載音檔
       playerIds.forEach(uid => {
         const targetUrl = (uid === room.undercoverId) ? undercoverUrl : civilianUrl;
         io.to(room.players[uid].socketId).emit('PRELOAD_MUSIC', targetUrl);
       });
-
-      // 💡 15秒超時防呆機制：若有人 15 秒沒載完，自動略過他並強行發車
-      if (room.loadingTimeout) clearTimeout(room.loadingTimeout);
-      room.loadingTimeout = setTimeout(() => {
-        if (room && room.state === 'LOADING') {
-          console.log(`房間 ${roomId} 下載超時，強制發車！`);
-          playerIds.forEach(uid => { room.players[uid].isLoaded = true; });
-          checkDownloadProgress(roomId);
-        }
-      }, 15000);
     }
   });
 
@@ -292,7 +274,7 @@ io.on('connection', (socket) => {
     const room = rooms[roomId];
     if (room && room.players[userId]) {
       room.players[userId].isLoaded = true;
-      io.to(roomId).emit('room_state_update', room); 
+      io.to(roomId).emit('room_state_update', room); // 廣播最新下載狀態
       checkDownloadProgress(roomId);
     }
   });
@@ -309,10 +291,7 @@ io.on('connection', (socket) => {
     const room = rooms[roomId];
     if (!room) return;
 
-    if (room.playTimeout) clearTimeout(room.playTimeout);
-    if (room.votingTimeout) clearTimeout(room.votingTimeout);
-
-    room.state = 'RESULT'; 
+    room.state = 'LOBBY';
     room.phaseEndTime = null;
 
     let voteCounts = {};
@@ -341,14 +320,10 @@ io.on('connection', (socket) => {
     
     if (winner === '平民勝利') {
       Object.keys(room.players).forEach(uid => {
-        if (uid !== room.undercoverId) {
-          room.scores[uid] = (room.scores[uid] || 0) + 1;
-        }
+        if (uid !== room.undercoverId) room.scores[uid] += 1;
       });
     } else {
-      if (room.players[room.undercoverId]) {
-        room.scores[room.undercoverId] = (room.scores[room.undercoverId] || 0) + 3;
-      }
+      if (room.players[room.undercoverId]) room.scores[room.undercoverId] += 3;
     }
 
     const eliminatedData = eliminated.map(id => ({
@@ -366,6 +341,7 @@ io.on('connection', (socket) => {
       undercoverSong: room.undercoverSong
     });
 
+    Object.values(room.players).forEach(p => { p.isReady = false; });
     io.to(roomId).emit('room_state_update', room);
   }
 
@@ -378,10 +354,7 @@ io.on('connection', (socket) => {
           room.players[userId].status = 'OFFLINE';
           if (room.state === 'LOBBY') {
               room.players[userId].isReady = false; 
-          } else if (room.state === 'LOADING') {
-              checkDownloadProgress(roomId);
           }
-          
           io.to(roomId).emit('room_state_update', room); 
           
           disconnectTimers[userId] = setTimeout(() => {
@@ -397,6 +370,7 @@ io.on('connection', (socket) => {
                 if (Object.keys(rooms[roomId].players).length === 0) {
                     delete rooms[roomId];
                 } else {
+                    // 💡 如果在等大家載音樂，而這傢伙 30 秒都沒回來被踢了，我們就重新檢查要不要發車！
                     if (rooms[roomId].state === 'LOADING') checkDownloadProgress(roomId);
                 }
               }
