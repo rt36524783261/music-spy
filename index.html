@@ -9,23 +9,23 @@
     <style>
         body { background-color: #f4ece1; color: #4a4036; font-family: 'Noto Sans TC', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
         
-        /* 💡 容器寬度放大至 540px，給按鈕與文字更多呼吸空間 */
+        /* 💡 現代毛玻璃質感 (Modern Glassmorphism)：半透明透光、柔和光暈與內陰影 */
         .container { 
-            background-color: #ffffff; 
-            background-image: radial-gradient(#f0e9df 1px, transparent 1px);
-            background-size: 16px 16px;
+            background: rgba(255, 250, 245, 0.85); 
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
             padding: 35px 30px; border-radius: 24px; width: 90%; max-width: 540px; 
-            box-shadow: 0 15px 35px rgba(139, 115, 85, 0.12), inset 0 1px 0 rgba(255,255,255,0.8); 
+            box-shadow: 0 20px 40px rgba(139, 115, 85, 0.15), inset 0 1px 0 rgba(255,255,255,0.9); 
             text-align: center; position: relative; overflow: hidden; 
-            border: 2px solid #eae2d5;
+            border: 1px solid rgba(255, 255, 255, 0.9);
         }
-        .container::before { content: ''; position: absolute; top: -40px; left: -40px; width: 140px; height: 140px; background-color: #fff5eb; border-radius: 50%; z-index: 0; }
-        .container::after { content: ''; position: absolute; bottom: -30px; right: -30px; width: 100px; height: 100px; background-color: #f0f4f1; border-radius: 50%; z-index: 0; }
+        .container::before { content: ''; position: absolute; top: -40px; left: -40px; width: 140px; height: 140px; background-color: rgba(255, 245, 235, 0.6); border-radius: 50%; z-index: 0; }
+        .container::after { content: ''; position: absolute; bottom: -30px; right: -30px; width: 100px; height: 100px; background-color: rgba(240, 244, 241, 0.6); border-radius: 50%; z-index: 0; }
         .content-wrapper { position: relative; z-index: 1; }
 
         h1 { margin-top: 0; margin-bottom: 20px; color: #6b5b4e; font-weight: 900; letter-spacing: 2px; }
         .label { font-size: 14px; font-weight: bold; color: #a39589; margin-bottom: 10px; display: block; }
-        input, select { padding: 14px; font-size: 16px; width: 80%; margin-bottom: 20px; border-radius: 12px; border: 2px solid #f2ede4; background: #faf8f5; color: #5a4b41; text-align: center; font-weight: bold; transition: all 0.3s; }
+        input, select { padding: 14px; font-size: 16px; width: 80%; margin-bottom: 20px; border-radius: 12px; border: 2px solid #f2ede4; background: rgba(250, 248, 245, 0.9); color: #5a4b41; text-align: center; font-weight: bold; transition: all 0.3s; }
         input:focus, select:focus { outline: none; border-color: #e3a87c; background: #ffffff; }
 
         button { padding: 14px 24px; font-size: 16px; font-weight: 700; margin: 10px 5px; cursor: pointer; border-radius: 12px; border: none; background-color: #e3a87c; color: white; box-shadow: 0 4px 12px rgba(227, 168, 124, 0.3); transition: all 0.2s; white-space: nowrap; }
@@ -37,7 +37,7 @@
         
         .btn-disabled { background-color: #d3c9c1 !important; color: #ffffff !important; box-shadow: none !important; cursor: not-allowed !important; transform: none !important; }
         
-        .btn-outline { background-color: transparent; border: 2px solid #e07a5f; color: #e07a5f; box-shadow: none; font-size: 13px; padding: 6px 10px; white-space: nowrap; }
+        .btn-outline { background-color: rgba(255,255,255,0.5); border: 2px solid #e07a5f; color: #e07a5f; box-shadow: none; font-size: 13px; padding: 6px 10px; white-space: nowrap; }
         .btn-outline:hover { background-color: #e07a5f; color: white; }
         .btn-setting { border: 2px solid #9cbca7; color: #9cbca7; }
         .btn-setting:hover { background-color: #9cbca7; color: white; }
@@ -49,25 +49,31 @@
         .btn-kick { background-color: #e07a5f; color: white; border: none; padding: 4px 10px; font-size: 12px; border-radius: 8px; margin-left: 10px; cursor: pointer; box-shadow: none; }
         .btn-kick:hover { background-color: #c9654b; transform: none; }
 
-        /* 💡 頂部按鈕列優化：支援完整雙向滑動，預設左側對齊不被卡住 */
+        /* 💡 頂部按鈕 RWD：手機緊密、電腦置中 */
         .header-btns { 
             display: flex; justify-content: flex-start; flex-wrap: nowrap; align-items: center; 
             width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; 
-            gap: 6px; padding: 4px 2px 8px 2px; scrollbar-width: thin;
+            gap: 4px; padding: 4px 2px 8px 2px; scrollbar-width: thin;
+        }
+        @media (min-width: 600px) {
+            .header-btns {
+                justify-content: center;
+                overflow-x: visible;
+            }
         }
 
         .room-header { border-bottom: 2px dashed #f2ede4; padding-bottom: 15px; margin-bottom: 20px; display: flex; flex-direction: column; align-items: center;}
         #displayRoomId { font-size: 32px; font-weight: 900; color: #cf9366; margin: 0 0 10px 0; letter-spacing: 4px;}
         .room-settings-info { width: 100%; font-size: 14px; color: #a39589; margin-top: 10px; font-weight: bold; }
         
-        .player-list-item { font-size: 16px; font-weight: bold; padding: 12px 15px; margin: 8px 0; background: #faf8f5; border-radius: 12px; color: #7a6a5d; border: 1px solid #f2ede4; display: flex; justify-content: space-between; align-items: center; overflow: hidden; }
+        .player-list-item { font-size: 16px; font-weight: bold; padding: 12px 15px; margin: 8px 0; background: rgba(250, 248, 245, 0.8); border-radius: 12px; color: #7a6a5d; border: 1px solid #f2ede4; display: flex; justify-content: space-between; align-items: center; overflow: hidden; }
         
         .player-info-left { display: flex; align-items: center; flex: 1; min-width: 0; margin-right: 10px; }
         .player-name-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
         .player-status-right { white-space: nowrap; flex-shrink: 0; display: flex; align-items: center; }
 
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(74, 64, 54, 0.6); z-index: 999; justify-content: center; align-items: center; backdrop-filter: blur(3px); }
-        .modal-box { background: white; padding: 30px; border-radius: 20px; width: 85%; max-width: 380px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); text-align: center; max-height: 80vh; display: flex; flex-direction: column; }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(74, 64, 54, 0.6); z-index: 999; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
+        .modal-box { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); padding: 30px; border-radius: 20px; width: 85%; max-width: 380px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); text-align: center; max-height: 80vh; display: flex; flex-direction: column; }
         .modal-msg { margin-bottom: 20px; font-size: 18px; font-weight: bold; color: #6b5b4e; }
         .modal-btns { display: flex; justify-content: center; gap: 15px; margin-top: 20px; }
 
@@ -77,29 +83,57 @@
         .rank-name-box { flex: 1; min-width: 0; margin-right: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
         .rank-score-box { flex-shrink: 0; color: #cf9366; font-size: 16px; }
 
-        /* 💡 替代方案 1：復古錄音帶 (Cassette Tape) 視覺元件與旋轉動畫 */
-        .cassette-container {
-            width: 180px; height: 100px; margin: 15px auto;
-            background: #4a4036; border-radius: 12px; position: relative;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.15); border: 3px solid #6b5b4e;
-            display: flex; flex-direction: column; justify-content: space-between; padding: 10px;
+        /* 💡 方案 B：軟萌戴耳機小貓咪 (Chibi Cat with Headphones) 動畫元件 */
+        .cat-box {
+            position: relative; width: 100px; height: 100px; margin: 15px auto;
+            animation: catBob 1.2s ease-in-out infinite alternate;
         }
-        .cassette-window {
-            width: 110px; height: 42px; background: #faf8f5; margin: 0 auto; border-radius: 6px;
-            border: 2px solid #b8a99a; display: flex; justify-content: space-around; align-items: center; position: relative;
+        @keyframes catBob {
+            0% { transform: translateY(0) rotate(-2deg); }
+            100% { transform: translateY(-8px) rotate(2deg); }
         }
-        .cassette-spool {
-            width: 28px; height: 28px; border: 3px dashed #6b5b4e; border-radius: 50%;
+        .cat-head {
+            position: absolute; bottom: 5px; left: 15px; width: 70px; height: 60px;
+            background: #e3b78f; border-radius: 35px 35px 30px 30px;
+            box-shadow: inset -3px -3px 0 rgba(0,0,0,0.06);
         }
-        .cassette-container.spinning .cassette-spool {
-            animation: spinSpool 2s linear infinite;
+        .cat-ear {
+            position: absolute; top: -10px; width: 22px; height: 22px;
+            background: #e3b78f; clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
         }
-        @keyframes spinSpool {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        .cat-ear.left { left: 6px; transform: rotate(-15deg); }
+        .cat-ear.right { right: 6px; transform: rotate(15deg); }
+        .cat-eye {
+            position: absolute; top: 22px; width: 7px; height: 9px;
+            background: #4a4036; border-radius: 50%;
         }
-        .cassette-label {
-            font-size: 11px; font-weight: bold; color: white; text-align: center; background: #e3a87c; padding: 2px 6px; border-radius: 4px;
+        .cat-eye.left { left: 19px; }
+        .cat-eye.right { right: 19px; }
+        .cat-nose {
+            position: absolute; top: 31px; left: 31px; width: 6px; height: 4px;
+            background: #d48364; border-radius: 50%;
+        }
+        .cat-mouth {
+            position: absolute; top: 35px; left: 29px; width: 12px; height: 6px;
+            border-bottom: 2px solid #4a4036; border-radius: 0 0 6px 6px;
+        }
+        .headphone-band {
+            position: absolute; top: -15px; left: 10px; width: 50px; height: 26px;
+            border: 4px solid #e07a5f; border-bottom: none; border-radius: 25px 25px 0 0;
+        }
+        .headphone-cup {
+            position: absolute; top: 15px; width: 14px; height: 22px;
+            background: #e07a5f; border-radius: 6px;
+        }
+        .headphone-cup.left { left: -2px; }
+        .headphone-cup.right { right: -2px; }
+        .floating-notes {
+            position: absolute; top: -12px; right: 0px; font-size: 16px; font-weight: bold;
+            color: #e07a5f; animation: floatNotes 1s ease-in-out infinite alternate;
+        }
+        @keyframes floatNotes {
+            0% { transform: translateY(0); opacity: 0.7; }
+            100% { transform: translateY(-8px); opacity: 1; }
         }
 
         /* 💡 0% 到 100% 時間進度條 */
@@ -114,18 +148,18 @@
 
         #countdownNumber, #voteTimer { font-size: 60px; font-weight: 900; color: #e07a5f; text-shadow: 2px 4px 10px rgba(224, 122, 95, 0.2); margin: 10px 0; }
         .vote-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
-        .vote-btn { padding: 15px; background: #faf8f5; border: 2px solid #f2ede4; border-radius: 12px; font-size: 16px; font-weight: bold; color: #7a6a5d; cursor: pointer; transition: 0.2s; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; position: relative; }
+        .vote-btn { padding: 15px; background: rgba(250, 248, 245, 0.9); border: 2px solid #f2ede4; border-radius: 12px; font-size: 16px; font-weight: bold; color: #7a6a5d; cursor: pointer; transition: 0.2s; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; position: relative; }
         .vote-btn.selected { background: #e07a5f; color: white; border-color: #c9654b; transform: scale(1.05); }
 
         #resultTitle { font-size: 32px; font-weight: 900; margin-bottom: 15px; }
         
-        .song-reveal-box { background: #faf8f5; border: 1px solid #f2ede4; border-radius: 12px; padding: 15px; margin-bottom: 15px; text-align: left; }
+        .song-reveal-box { background: rgba(250, 248, 245, 0.8); border: 1px solid #f2ede4; border-radius: 12px; padding: 15px; margin-bottom: 15px; text-align: left; }
         .eliminated-name { font-weight: bold; }
 
         #toast { visibility: hidden; min-width: 150px; max-width: 80%; background-color: #333; color: #fff; text-align: center; border-radius: 8px; padding: 10px; position: fixed; z-index: 1000; left: 50%; bottom: 30px; transform: translateX(-50%); font-size: 14px; opacity: 0; transition: opacity 0.3s, bottom 0.3s; word-wrap: break-word; font-weight: bold; }
         #toast.show { visibility: visible; opacity: 1; bottom: 50px; }
 
-        #downloadList { margin-top: 20px; text-align: left; background: #faf8f5; border-radius: 12px; padding: 15px; border: 1px solid #f2ede4; max-height: 200px; overflow-y: auto; }
+        #downloadList { margin-top: 20px; text-align: left; background: rgba(250, 248, 245, 0.8); border-radius: 12px; padding: 15px; border: 1px solid #f2ede4; max-height: 200px; overflow-y: auto; }
         .dl-item { font-weight: bold; color: #7a6a5d; margin: 8px 0; display: flex; justify-content: space-between; border-bottom: 1px dashed #eaddcc; padding-bottom: 5px;}
         .dl-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0;}
     </style>
@@ -173,15 +207,23 @@
             <h1 id="playStatusTitle" style="color: #cf9366;">音檔下載中...</h1>
             <p id="playStatusDesc" style="color: #a39589; font-weight: bold;">請確保手機音量已開啟</p>
             
-            <!-- 💡 復古錄音帶動畫元件 -->
-            <div id="cassetteWrapper" style="display: none;">
-                <div class="cassette-container" id="cassetteBox">
-                    <div class="cassette-label" id="cassetteLabelText">音樂臥底</div>
-                    <div class="cassette-window">
-                        <div class="cassette-spool"></div>
-                        <div class="cassette-spool"></div>
+            <!-- 💡 軟萌戴耳機小貓咪動畫元件 -->
+            <div id="catWrapper" style="display: none;">
+                <div class="cat-box">
+                    <div class="floating-notes">♪ ♫</div>
+                    <div class="cat-head">
+                        <div class="cat-ear left"></div>
+                        <div class="cat-ear right"></div>
+                        <div class="cat-eye left"></div>
+                        <div class="cat-eye right"></div>
+                        <div class="cat-nose"></div>
+                        <div class="cat-mouth"></div>
+                        <div class="headphone-band"></div>
+                        <div class="headphone-cup left"></div>
+                        <div class="headphone-cup right"></div>
                     </div>
                 </div>
+                <div id="catLabelText" style="font-weight: bold; color: #6b5b4e; font-size: 14px; margin-top: 5px;"></div>
             </div>
 
             <!-- 💡 0% 到 100% 時間進度條 -->
@@ -212,11 +254,11 @@
             
             <div class="song-reveal-box">
                 <div style="font-size: 14px; color: #a39589; margin-bottom: 8px;">🎵 平民聽的歌：<br><span id="resultCivilianSong" style="color: #7a6a5d; font-weight: bold; font-size: 16px;">--</span></div>
-                <!-- 💡 臥底聽的歌顏色改為與平民一致的深灰色 -->
+                <!-- 💡 臥底聽的歌顏色與平民一致 -->
                 <div style="font-size: 14px; color: #a39589;">🎧 臥底聽的歌：<br><span id="resultUndercoverSong" style="color: #7a6a5d; font-weight: bold; font-size: 16px;">--</span></div>
             </div>
 
-            <p style="font-size: 16px; color: #7a6a5d; background: #faf8f5; padding: 10px; border-radius: 10px; margin-bottom: 20px;">
+            <p style="font-size: 16px; color: #7a6a5d; background: rgba(250, 248, 245, 0.9); padding: 10px; border-radius: 10px; margin-bottom: 20px;">
                 被淘汰的玩家：<br><span id="resultEliminated">--</span>
             </p>
 
@@ -518,9 +560,8 @@
                 document.getElementById('playStatusTitle').innerText = '仔細聽！';
                 document.getElementById('playStatusDesc').innerText = '找出那個音樂不一樣的騙子';
                 document.getElementById('downloadList').style.display = 'none';
-                document.getElementById('cassetteWrapper').style.display = 'block';
-                document.getElementById('cassetteBox').classList.add('spinning');
-                document.getElementById('cassetteLabelText').innerText = roomState.settings.category;
+                document.getElementById('catWrapper').style.display = 'block';
+                document.getElementById('catLabelText').innerText = '🎵 ' + roomState.settings.category;
                 document.getElementById('progressContainer').style.display = 'block';
                 document.getElementById('countdownNumber').style.display = 'block';
                 
@@ -620,7 +661,7 @@
             switchView('playingScreen');
             document.getElementById('playStatusTitle').innerText = '音檔下載中...';
             document.getElementById('playStatusDesc').innerText = '請確保手機音量開啟';
-            document.getElementById('cassetteWrapper').style.display = 'none';
+            document.getElementById('catWrapper').style.display = 'none';
             document.getElementById('progressContainer').style.display = 'none';
             document.getElementById('countdownNumber').style.display = 'none';
             
@@ -704,7 +745,6 @@
             title.innerText = data.winner;
             title.style.color = (data.winner === '平民勝利') ? '#9cbca7' : '#e07a5f';
             
-            // 💡 結算畫面「本局臥底是」名字改為橘紅色
             const spyEl = document.getElementById('resultSpy');
             spyEl.innerText = data.undercoverName;
             spyEl.style.color = '#e07a5f';
