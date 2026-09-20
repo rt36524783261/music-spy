@@ -6,6 +6,7 @@ const io = require('socket.io')(http);
 const rooms = {}; 
 const disconnectTimers = {}; 
 
+// 💡 200 首無敵題庫：動漫神曲已全面替換為官方日文原名，保證 100% 原唱
 const POOLS = {
   '華語流行': [
     "周杰倫 擱淺", "周杰倫 七里香", "周杰倫 晴天", "周杰倫 稻香", "周杰倫 夜曲",
@@ -71,10 +72,12 @@ async function fetchAppleMusicPreview(keyword) {
 
 app.get('/', (req, res) => { res.sendFile(__dirname + '/index.html'); });
 
+// 💡 新增：集中管理檢查下載進度的函數，防止被凍結的玩家卡死房間
 function checkDownloadProgress(roomId) {
   const room = rooms[roomId];
   if (!room || room.state !== 'PLAYING' || room.isPlayingStarted) return;
   
+  // 只計算還活著、且不是旁觀者的玩家
   const activePlayers = Object.values(room.players).filter(p => p.status === 'ONLINE' && !p.isSpectator);
   const loadedCount = activePlayers.filter(p => p.isLoaded === true).length;
   
@@ -123,27 +126,17 @@ io.on('connection', (socket) => {
       room.players[userId].socketId = socket.id; 
       room.players[userId].status = 'ONLINE';
     } else {
-      if (room.state !== 'LOBBY') {
-        return socket.emit('error_msg', '遊戲正在進行中，無法加入！');
-      }
       room.players[userId] = { name: userName || '飛天巴庫', socketId: socket.id, status: 'ONLINE', isReady: false, isLoaded: false, isSpectator: false };
       if (room.scores[userId] === undefined) room.scores[userId] = 0; 
+      
+      // 💡 鎖門機制：如果遊戲已經開始，新加入的人直接變成旁觀者
+      if (room.state !== 'LOBBY') {
+        room.players[userId].isSpectator = true; 
+      }
     }
     socket.join(roomId);
     socket.emit('room_joined', roomId);
     io.to(roomId).emit('room_state_update', room);
-  });
-
-  // 💡 新增：強制喚醒機制 (解決卡在斷線中)
-  socket.on('wake_up', ({ roomId, userId }) => {
-    const room = rooms[roomId];
-    if (room && room.players[userId]) {
-        console.log(`玩家 ${userId} 透過 wake_up 喚醒連線`);
-        clearTimeout(disconnectTimers[userId]); 
-        room.players[userId].socketId = socket.id; // 更新 socket
-        room.players[userId].status = 'ONLINE';
-        io.to(roomId).emit('room_state_update', room);
-    }
   });
 
   socket.on('leave_room', ({ roomId, userId }) => {
@@ -190,15 +183,16 @@ io.on('connection', (socket) => {
     }
   });
 
+  // 💡 專門接殺「切換 APP 背景冷凍」的事件
   socket.on('go_background', ({ roomId, userId }) => {
     const room = rooms[roomId];
     if (room && room.players[userId]) {
         room.players[userId].status = 'OFFLINE';
         if (room.state === 'LOBBY') {
-            room.players[userId].isReady = false; 
+            room.players[userId].isReady = false; // 在大廳切畫面：秒取消準備
         } else {
-            room.players[userId].isSpectator = true; 
-            checkDownloadProgress(roomId); 
+            room.players[userId].isSpectator = true; // 在遊戲中切畫面：直接變旁觀者
+            checkDownloadProgress(roomId); // 踢除資格後，立刻檢查剩下的人是不是載好了
         }
         io.to(roomId).emit('room_state_update', room);
     }
@@ -249,7 +243,7 @@ io.on('connection', (socket) => {
 
       playerIds.forEach(uid => {
         room.players[uid].isLoaded = false;
-        room.players[uid].isSpectator = false; 
+        room.players[uid].isSpectator = false; // 遊戲開始時，大家重置為參賽者
         const targetUrl = (uid === room.undercoverId) ? undercoverUrl : civilianUrl;
         io.to(room.players[uid].socketId).emit('PRELOAD_MUSIC', targetUrl);
       });
@@ -260,6 +254,7 @@ io.on('connection', (socket) => {
     const room = rooms[roomId];
     if (room && room.players[userId]) {
       room.players[userId].isLoaded = true;
+      // 廣播給所有人：這個玩家已經載好囉！
       io.to(roomId).emit('PLAYER_LOADED', userId);
       checkDownloadProgress(roomId);
     }
@@ -281,6 +276,7 @@ io.on('connection', (socket) => {
 
     let voteCounts = {};
     for (let voter in room.votes) {
+      // 結算時，旁觀者的票不算數！
       if (room.players[voter] && room.players[voter].status === 'ONLINE' && !room.players[voter].isSpectator) {
         let target = room.votes[voter];
         if (room.players[target]) { 
@@ -305,6 +301,7 @@ io.on('connection', (socket) => {
     const undercoverDied = eliminated.includes(room.undercoverId);
     const winner = undercoverDied ? '平民勝利' : '臥底勝利';
     
+    // 計分時同樣排除旁觀者
     if (winner === '平民勝利') {
       Object.keys(room.players).forEach(uid => {
         if (uid !== room.undercoverId && room.players[uid].status === 'ONLINE' && !room.players[uid].isSpectator) {
@@ -334,7 +331,7 @@ io.on('connection', (socket) => {
 
     Object.values(room.players).forEach(p => {
         p.isReady = false;
-        p.isSpectator = false; 
+        p.isSpectator = false; // 結算後，旁觀者刑期屆滿，恢復自由身
     });
     io.to(roomId).emit('room_state_update', room);
   }
