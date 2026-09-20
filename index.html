@@ -141,7 +141,7 @@
             
             <div class="song-reveal-box">
                 <div style="font-size: 14px; color: #a39589; margin-bottom: 8px;">🎵 平民聽的歌：<br><span id="resultCivilianSong" style="color: #7a6a5d; font-weight: bold; font-size: 16px;">--</span></div>
-                <div style="font-size: 14px; color: #a39589;">🎧 臥底聽的歌：<br><span id="resultUndercoverSong" style="color: #cf9366; font-weight: bold; font-size: 16px;">--</span></div>
+                <div style="font-size: 14px; color: #a39589;">🎧 臥底聽的歌：<br><span id="resultUndercoverSong" style="color: #cf9366; font-size: 16px;">--</span></div>
             </div>
 
             <p style="font-size: 16px; color: #7a6a5d; background: #faf8f5; padding: 10px; border-radius: 10px; margin-bottom: 20px;">
@@ -371,7 +371,7 @@
             } else if (roomState.state === 'VOTING') {
                 switchView('votingScreen');
                 
-                // 💡 電腦版音樂不停止＆幽靈選票修正：進入投票時強制卡掉音樂並清空選票
+                // 💡 電腦版強制停音樂 & 清空幽靈選票
                 const audio = document.getElementById('bgm');
                 if (audio && !audio.paused) {
                     audio.pause();
