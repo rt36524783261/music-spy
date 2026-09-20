@@ -24,18 +24,23 @@
         .btn-secondary:hover { background-color: #84a690; }
         .btn-danger { background-color: #e07a5f; box-shadow: 0 4px 12px rgba(224, 122, 95, 0.3); }
         .btn-danger:hover { background-color: #c9654b; }
-        .btn-outline { background-color: transparent; border: 2px solid #e07a5f; color: #e07a5f; box-shadow: none; padding: 6px 12px; font-size: 14px; }
+        
+        /* 基礎線框按鈕 */
+        .btn-outline { background-color: transparent; border: 2px solid #e07a5f; color: #e07a5f; box-shadow: none; font-size: 14px; padding: 6px 12px;}
         .btn-outline:hover { background-color: #e07a5f; color: white; }
         .btn-setting { border: 2px solid #9cbca7; color: #9cbca7; }
         .btn-setting:hover { background-color: #9cbca7; color: white; }
         .btn-rank { border: 2px solid #cf9366; color: #cf9366; }
         .btn-rank:hover { background-color: #cf9366; color: white; }
         
+        /* 💡 姊姊特製的：頭部迷你按鈕樣式，幫助你在手機上排成一行 */
+        .btn-sm { padding: 6px 8px; font-size: 13px; white-space: nowrap; margin: 4px; }
+        
         .btn-kick { background-color: #e07a5f; color: white; border: none; padding: 4px 10px; font-size: 12px; border-radius: 8px; margin-left: 10px; cursor: pointer; box-shadow: none; }
         .btn-kick:hover { background-color: #c9654b; transform: none; }
 
-        /* 按鈕容器：自動換行、置中，防止小手機被撐爆 */
-        .header-btns { display: flex; justify-content: center; flex-wrap: wrap; gap: 5px; }
+        /* 💡 強制不換行，按鈕乖乖排好 */
+        .header-btns { display: flex; justify-content: center; flex-wrap: nowrap; align-items: center; width: 100%; overflow-x: auto;}
 
         .room-header { border-bottom: 2px dashed #f2ede4; padding-bottom: 15px; margin-bottom: 20px; display: flex; flex-direction: column; align-items: center;}
         #displayRoomId { font-size: 24px; font-weight: 900; color: #cf9366; margin: 0 0 10px 0; }
@@ -52,7 +57,6 @@
         .modal-msg { margin-bottom: 20px; font-size: 18px; font-weight: bold; color: #6b5b4e; }
         .modal-btns { display: flex; justify-content: center; gap: 15px; margin-top: 20px; }
 
-        /* 排行榜專屬樣式 */
         .rank-list-container { overflow-y: auto; flex: 1; text-align: left; }
         .rank-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #f2ede4; font-size: 16px; font-weight: bold; color: #7a6a5d; }
         .rank-item:last-child { border-bottom: none; }
@@ -72,7 +76,6 @@
         }
         .eliminated-name { font-weight: bold; }
 
-        /* 浮動的黑色小提示框 (Tooltip) */
         #toast {
             visibility: hidden; min-width: 150px; max-width: 80%; background-color: #333; color: #fff;
             text-align: center; border-radius: 8px; padding: 10px; position: fixed; z-index: 1000;
@@ -103,9 +106,10 @@
             <div class="room-header">
                 <h2 id="displayRoomId">房間：</h2>
                 <div class="header-btns">
-                    <button class="btn-outline btn-rank" onclick="openRankModal()">玩家排行</button>
-                    <button id="settingBtn" class="btn-outline btn-setting" style="display: none;" onclick="openSettings()">遊戲設定</button>
-                    <button id="leaveBtn" class="btn-outline" onclick="leaveRoom()">退出房間</button>
+                    <!-- 套用 .btn-sm 讓它們可以一起擠在同一行 -->
+                    <button class="btn-outline btn-rank btn-sm" onclick="openRankModal()">玩家排行</button>
+                    <button id="settingBtn" class="btn-outline btn-setting btn-sm" style="display: none;" onclick="openSettings()">遊戲設定</button>
+                    <button id="leaveBtn" class="btn-outline btn-sm" onclick="leaveRoom()">退出房間</button>
                 </div>
                 <div class="room-settings-info" id="displaySettings">設定：15秒 | 混合隨機</div>
             </div>
@@ -162,9 +166,7 @@
     <div id="rankModal" class="modal-overlay">
         <div class="modal-box">
             <div class="modal-msg">🏆 玩家排行榜</div>
-            <div id="rankListContainer" class="rank-list-container">
-                <!-- 排行榜內容會由 JS 動態生成 -->
-            </div>
+            <div id="rankListContainer" class="rank-list-container"></div>
             <div class="modal-btns">
                 <button class="btn-secondary" onclick="document.getElementById('rankModal').style.display='none'">關閉</button>
             </div>
@@ -208,7 +210,6 @@
         </div>
     </div>
 
-    <!-- 全名提示浮動框 -->
     <div id="toast"></div>
 
     <audio id="bgm" preload="auto"></audio>
@@ -223,7 +224,16 @@
         let voteTimer = null;
         let myVoteTarget = null;
         let globalPlayers = {}; 
-        let globalScores = {}; // 儲存分數供排行榜使用
+        let globalScores = {}; 
+
+        // 💡 自動喚醒機制的靈魂核心：
+        // 當你從背景切回網頁時，瀏覽器會觸發 'connect'，這時候我們自動幫你補發 join_room！
+        socket.on('connect', () => {
+            if (currentRoomId) {
+                console.log("偵測到重連！正在把你拉回房間...");
+                socket.emit('join_room', { roomId: currentRoomId, userId: myUserId, userName: getMyName() });
+            }
+        });
 
         function showToast(text) {
             const toast = document.getElementById("toast");
@@ -285,7 +295,6 @@
             document.getElementById('settingsModal').style.display = 'none';
         }
 
-        // 開啟排行榜彈窗，並繪製列表
         function openRankModal() {
             const container = document.getElementById('rankListContainer');
             container.innerHTML = '';
@@ -296,16 +305,21 @@
                 return scoreB - scoreA; 
             });
 
+            // 💡 姊姊加的：自動產生名次數字 (rankIndex)
+            let rankIndex = 1;
             sortedPlayerIds.forEach(uid => {
                 const p = globalPlayers[uid];
                 const score = globalScores[uid] || 0;
-                // 排行榜內的名字也加上 click 顯示全名的功能
+                
                 container.innerHTML += `
                     <div class="rank-item">
-                        <div class="rank-name-box" onclick="showToast('${p.name}')">${p.name}</div>
+                        <div class="rank-name-box" onclick="showToast('${p.name}')">
+                            <span style="color: #9cbca7; margin-right: 5px;">#${rankIndex}</span>${p.name}
+                        </div>
                         <div class="rank-score-box">${score} 分</div>
                     </div>
                 `;
+                rankIndex++; // 名次自動 +1
             });
             document.getElementById('rankModal').style.display = 'flex';
         }
@@ -313,7 +327,7 @@
         socket.on('error_msg', showAlert);
         
         socket.on('room_destroyed', () => { 
-            showAlert("房主已解散房間或離開！", () => { currentRoomId = null; switchView('homeScreen'); }); 
+            showAlert("房主已解散房間或離開超過 30 秒！", () => { currentRoomId = null; switchView('homeScreen'); }); 
         });
 
         socket.on('kicked_out', () => {
@@ -355,7 +369,6 @@
                     kickButtonHtml = `<button class="btn-kick" onclick="kickPlayer('${uid}')">踢出</button>`;
                 }
 
-                // 綁定 onclick="showToast('${p.name}')" 讓點擊可以看全名
                 listDiv.innerHTML += `
                     <div class="player-list-item">
                         <div class="player-info-left">
@@ -433,7 +446,6 @@
                 const btn = document.createElement('button');
                 btn.className = 'vote-btn';
                 btn.innerText = globalPlayers[uid].name;
-                // 投票按鈕也支援點擊顯示全名 (避免誤觸投票，這裡先保留原本功能，如果字被卡掉就靠排版解決)
                 btn.onclick = () => handleVoteClick(uid, btn);
                 grid.appendChild(btn);
             }

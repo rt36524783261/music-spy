@@ -214,7 +214,7 @@ io.on('connection', (socket) => {
       const onlinePlayers = Object.values(room.players).filter(p => p.status === 'ONLINE');
       const loadedOnlineCount = onlinePlayers.filter(p => p.isLoaded === true).length;
       
-      if (loadedOnlineCount === onlinePlayers.length) {
+      if (loadedOnlineCount === onlinePlayers.length && onlinePlayers.length > 0) {
         io.to(roomId).emit('START_PLAYING', room.settings.duration);
         
         setTimeout(() => {
@@ -270,7 +270,6 @@ io.on('connection', (socket) => {
     const undercoverDied = eliminated.includes(room.undercoverId);
     const winner = undercoverDied ? '平民勝利' : '臥底勝利';
     
-    // 計算分數：平民贏所有人+1(臥底除外)，臥底贏臥底+3
     if (winner === '平民勝利') {
       Object.keys(room.players).forEach(uid => {
         if (uid !== room.undercoverId && room.players[uid].status === 'ONLINE') {
@@ -290,7 +289,6 @@ io.on('connection', (socket) => {
     
     const undercoverName = room.players[room.undercoverId]?.name || '未知';
 
-    // 將包含分數的更新狀態一併送出
     io.to(roomId).emit('GAME_RESULT', { 
       winner, 
       eliminatedData, 
@@ -308,30 +306,28 @@ io.on('connection', (socket) => {
       const room = rooms[roomId];
       for (const userId in room.players) {
         if (room.players[userId].socketId === socket.id) {
-          if (room.hostId === userId) {
-            io.to(roomId).emit('room_destroyed');
-            delete rooms[roomId];
-            break;
-          }
-
-          if (room.state === 'LOBBY') {
-            room.players[userId].status = 'OFFLINE';
-            io.to(roomId).emit('room_state_update', room); 
-            
-            disconnectTimers[userId] = setTimeout(() => {
-              if (room.players[userId]) {
-                delete room.players[userId];
-                delete room.scores[userId];
+          
+          room.players[userId].status = 'OFFLINE';
+          // 💡 就在這裡：斷線的瞬間，立刻把他的「準備完成」狀態取消掉！
+          room.players[userId].isReady = false; 
+          
+          io.to(roomId).emit('room_state_update', room); 
+          
+          disconnectTimers[userId] = setTimeout(() => {
+            if (room.players[userId]) {
+              delete room.players[userId];
+              delete room.scores[userId];
+              
+              if (room.hostId === userId) {
+                io.to(roomId).emit('room_destroyed');
+                delete rooms[roomId];
+              } else {
                 io.to(roomId).emit('room_state_update', room); 
                 if (Object.keys(room.players).length === 0) delete rooms[roomId];
               }
-            }, 30000); 
-          } else {
-            delete room.players[userId];
-            delete room.scores[userId];
-            io.to(roomId).emit('room_state_update', room);
-            if (Object.keys(room.players).length === 0) delete rooms[roomId];
-          }
+            }
+          }, 30000); 
+          
           break;
         }
       }
