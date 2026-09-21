@@ -83,19 +83,26 @@
         .rank-name-box { flex: 1; min-width: 0; margin-right: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
         .rank-score-box { flex-shrink: 0; color: #cf9366; font-size: 16px; }
 
-        /* 💡 啵嚕醬真實照片動畫 */
-        .cat-box {
-            width: 130px; height: 130px; margin: 10px auto;
-            animation: catBob 1.2s ease-in-out infinite alternate;
+        /* 💡 歐泥醬 & 啵嚕醬 雙貓並排搖晃動畫 */
+        .twin-cats-container {
+            display: flex; justify-content: center; gap: 15px; margin: 15px auto 5px auto;
         }
-        .cat-box img {
-            width: 100%; height: 100%; object-fit: cover;
+        .cat-img {
+            width: 100px; height: 100px; object-fit: cover;
             border-radius: 50%; border: 3px solid #e3a87c;
             box-shadow: 0 8px 20px rgba(139, 115, 85, 0.2);
         }
-        @keyframes catBob {
-            0% { transform: translateY(0) rotate(-1deg); }
-            100% { transform: translateY(-6px) rotate(1deg); }
+        /* 左邊貓咪動畫 */
+        .cat-left { animation: catBobLeft 1s ease-in-out infinite alternate; }
+        @keyframes catBobLeft {
+            0% { transform: translateY(0) rotate(-2deg); }
+            100% { transform: translateY(-8px) rotate(2deg); }
+        }
+        /* 右邊貓咪動畫（延遲 0.3秒，產生錯開的搖擺感） */
+        .cat-right { animation: catBobRight 1s ease-in-out infinite alternate 0.3s; }
+        @keyframes catBobRight {
+            0% { transform: translateY(0) rotate(2deg); }
+            100% { transform: translateY(-8px) rotate(-2deg); }
         }
 
         .progress-bar-container {
@@ -152,7 +159,8 @@
                     <button id="settingBtn" class="btn-outline btn-setting btn-sm" style="display: none;" onclick="openSettings()">遊戲設定</button>
                     <button id="leaveBtn" class="btn-outline btn-sm" onclick="leaveRoom()">退出房間</button>
                 </div>
-                <div class="room-settings-info" id="displaySettings">設定：15秒 | 小朋友才選擇</div>
+                <!-- 💡 預設字眼改成「全部」 -->
+                <div class="room-settings-info" id="displaySettings">設定：15秒 | 全部</div>
             </div>
             <div id="playerList" style="margin: 20px 0; min-height: 150px;"></div>
             
@@ -168,11 +176,15 @@
             <h1 id="playStatusTitle" style="color: #cf9366;">音檔下載中...</h1>
             <p id="playStatusDesc" style="color: #a39589; font-weight: bold;">請確保手機音量已開啟</p>
             
-            <!-- 💡 載入 bolujang.jfif 圖片 -->
+            <!-- 💡 歐泥醬與啵嚕醬 雙貓並排區塊 -->
             <div id="catWrapper" style="display: none;">
-                <div class="cat-box">
-                    <img src="bolujang.jfif" alt="啵嚕醬">
+                <div class="twin-cats-container">
+                    <!-- 左邊放歐泥醬 -->
+                    <img src="onijang.png" alt="歐泥醬" class="cat-img cat-left">
+                    <!-- 右邊放啵嚕醬 -->
+                    <img src="bolujang.png" alt="啵嚕醬" class="cat-img cat-right">
                 </div>
+                <!-- 💡 專屬動態陪伴文字 -->
                 <div id="catLabelText" style="font-weight: bold; color: #6b5b4e; font-size: 14px; margin-top: 8px;"></div>
             </div>
 
@@ -214,6 +226,7 @@
         </div>
     </div>
 
+    <!-- 歷史歌單 Modal -->
     <div id="historyModal" class="modal-overlay">
         <div class="modal-box">
             <div class="modal-msg">📜 歷史歌單回顧</div>
@@ -256,12 +269,13 @@
                 <option value="30">30 秒</option>
             </select>
             <span class="label">題庫歌單</span>
+            <!-- 💡 下拉選單預設改為「全部」 -->
             <select id="selectCategory">
                 <option value="華語流行">華語流行</option>
                 <option value="K-POP">K-POP</option>
                 <option value="動漫神曲">動漫神曲</option>
                 <option value="流行英語">流行英語</option>
-                <option value="小朋友才選擇" selected>小朋友才選擇</option>
+                <option value="全部" selected>全部</option>
             </select>
             <div class="modal-btns">
                 <button class="btn-secondary" onclick="document.getElementById('settingsModal').style.display='none'">取消</button>
@@ -324,7 +338,7 @@
             }
         });
 
-    socket.on('connect', () => {
+        socket.on('connect', () => {
             if (currentRoomId) {
                 socket.emit('join_room', { roomId: currentRoomId, userId: myUserId, userName: getMyName() });
             }
@@ -508,7 +522,8 @@
                 document.getElementById('playStatusDesc').innerText = '找出那個音樂不一樣的騙子';
                 document.getElementById('downloadList').style.display = 'none';
                 document.getElementById('catWrapper').style.display = 'block';
-                document.getElementById('catLabelText').innerText = '🎵 啵嚕醬陪你聽：' + roomState.settings.category;
+                // 💡 在這裡將字眼改為歐寶與啵寶
+                document.getElementById('catLabelText').innerText = '♪ 歐寶 × 啵寶｜當前歌單：' + roomState.settings.category;
                 document.getElementById('progressContainer').style.display = 'block';
                 document.getElementById('countdownNumber').style.display = 'block';
                 

@@ -6,7 +6,7 @@ const io = require('socket.io')(http);
 process.on('uncaughtException', (err) => { console.error('未捕獲的錯誤:', err); });
 process.on('unhandledRejection', (reason) => { console.error('未處理的 Promise 拒絕:', reason); });
 
-// 💡 關鍵：允許伺服器讀取同資料夾下的圖片等靜態檔案
+// 允許讀取同資料夾的圖片靜態檔案
 app.use(express.static(__dirname));
 
 const rooms = {}; 
@@ -289,7 +289,7 @@ io.on('connection', (socket) => {
 
     rooms[roomId] = { 
       hostId: userId, state: 'LOBBY', players: {},
-      settings: { duration: 15, category: '小朋友才選擇' }, 
+      settings: { duration: 15, category: '全部' }, // 💡 預設改為「全部」
       undercoverId: null, votes: {}, isVotingLocked: false,
       civilianSong: '', undercoverSong: '',
       playedSongs: [], scores: {}, lastResult: null, historyList: [],
@@ -393,7 +393,8 @@ io.on('connection', (socket) => {
       room.undercoverId = playerIds[Math.floor(Math.random() * playerIds.length)];
       
       let pool = [];
-      if (room.settings.category === '小朋友才選擇') {
+      // 💡 歌單為「全部」時，將所有陣列混合
+      if (room.settings.category === '全部') {
         Object.values(POOLS).forEach(arr => pool = pool.concat(arr));
       } else {
         pool = POOLS[room.settings.category] || [];
@@ -457,7 +458,6 @@ io.on('connection', (socket) => {
     }
   });
 
-  // 💡 嚴格檢測：必須全部在線玩家都投票才開始 3 秒倒數，且倒數中鎖定不允許改投重置
   socket.on('submit_vote', ({ roomId, userId, targetId }) => {
     const room = rooms[roomId];
     if (!room || room.state !== 'VOTING') return;
