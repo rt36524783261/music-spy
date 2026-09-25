@@ -6,11 +6,12 @@ const io = require('socket.io')(http);
 process.on('uncaughtException', (err) => { console.error('未捕獲的錯誤:', err); });
 process.on('unhandledRejection', (reason) => { console.error('未處理的 Promise 拒絕:', reason); });
 
-// 允許讀取同資料夾的圖片靜態檔案
+// 允許讀取同資料夾的圖片靜態檔案 (歐泥醬與啵嚕醬的照片)
 app.use(express.static(__dirname));
 
 const rooms = {}; 
 
+// 💡 題庫大升級！四大類別各 100 首，總計 400 首熱門神曲
 const POOLS = {
   '華語流行': [
     "周杰倫 擱淺", "周杰倫 七里香", "周杰倫 晴天", "周杰倫 稻香", "周杰倫 夜曲",
@@ -22,7 +23,17 @@ const POOLS = {
     "八三夭 想見你想見你想見你", "八三夭 東區東區", "八三夭 顛倒世界", "八三夭 我不想改變世界我只想不被世界改變", "八三夭 致青春",
     "茄子蛋 閣愛妳一擺", "茄子蛋 浪子回頭", "茄子蛋 浪流連", "茄子蛋 愛情你比我想的閣較偉大", "茄子蛋 恰似你的溫柔",
     "田馥甄 小幸運", "田馥甄 魔鬼中的天使", "田馥甄 寂寞寂寞就好", "田馥甄 日常", "田馥甄 無人知曉",
-    "陳奕迅 孤勇者", "陳奕迅 十年", "陳奕迅 愛情轉移", "陳奕迅 淘汰", "陳奕迅 浮誇"
+    "陳奕迅 孤勇者", "陳奕迅 十年", "陳奕迅 愛情轉移", "陳奕迅 淘汰", "陳奕迅 浮誇",
+    "五月天 突然好想你", "五月天 倔強", "五月天 知足", "五月天 離開地球表面", "五月天 溫柔", 
+    "張惠妹 連名帶姓", "張惠妹 聽海", "蔡依林 倒帶", "蔡依林 玫瑰少年", "孫燕姿 天黑黑", 
+    "孫燕姿 遇見", "林宥嘉 說謊", "林宥嘉 天真有邪", "林宥嘉 兜圈", "蕭敬騰 王妃", 
+    "蕭敬騰 阿飛的小蝴蝶", "薛之謙 演員", "薛之謙 醜八怪", "盧廣仲 刻在我心底的名字", "盧廣仲 魚仔", 
+    "陳勢安 天后", "胡夏 那些年", "李榮浩 李白", "李榮浩 模特", "李榮浩 年少有為", 
+    "周杰倫 告白氣球", "周杰倫 說好不哭", "周杰倫 等你下課", "周杰倫 青花瓷", "周杰倫 楓", 
+    "林俊傑 醉赤壁", "林俊傑 背對背擁抱", "鄧紫棋 多遠都要在一起", "鄧紫棋 畫", "告五人 在這座城市遺失了你", 
+    "告五人 唯一", "飛兒樂團 我們的愛", "飛兒樂團 月牙灣", "王心凌 愛你", "王心凌 當你", 
+    "楊丞琳 雨愛", "楊丞琳 曖昧", "徐佳瑩 尋人啟事", "徐佳瑩 失落沙洲", "A-Lin 有一種悲傷", 
+    "A-Lin 給我一個理由忘記", "周興哲 其實你並沒那麼孤單", "茄子蛋 日常", "李聖傑 痴心絕對", "動力火車 當"
   ],
   'K-POP': [
     "BLACKPINK How You Like That", "BLACKPINK Kill This Love", "BLACKPINK DDU-DU DDU-DU", "BLACKPINK Pink Venom", "BLACKPINK Shut Down",
@@ -34,7 +45,17 @@ const POOLS = {
     "LE SSERAFIM UNFORGIVEN", "LE SSERAFIM ANTIFRAGILE", "LE SSERAFIM FEARLESS", "LE SSERAFIM Perfect Night", "LE SSERAFIM Eve Psyche",
     "(G)I-DLE Nxde", "(G)I-DLE TOMBOY", "(G)I-DLE Queencard", "(G)I-DLE LATATA", "(G)I-DLE Super Lady",
     "SEVENTEEN Super", "SEVENTEEN HOT", "SEVENTEEN Don't Wanna Cry", "SEVENTEEN VERY NICE", "SEVENTEEN Clap",
-    "Stray Kids God's Menu", "Stray Kids MANIAC", "Stray Kids S-Class", "ITZY WANNABE", "Jungkook Seven"
+    "Stray Kids God's Menu", "Stray Kids MANIAC", "Stray Kids S-Class", "ITZY WANNABE", "Jungkook Seven",
+    "BIGBANG BANG BANG BANG", "BIGBANG FANTASTIC BABY", "BIGBANG LOSER", "EXO Love Shot", "EXO Growl", 
+    "Red Velvet Psycho", "Red Velvet Bad Boy", "Red Velvet Peek-A-Boo", "ITZY DALLA DALLA", "ITZY LOCO", 
+    "TXT Sugar Rush Ride", "TXT Blue Hour", "ENHYPEN Drunk-Dazed", "ENHYPEN Bite Me", "NMIXX DASH", 
+    "NMIXX O.O", "BABYMONSTER SHEESH", "BABYMONSTER BATTER UP", "ILLIT Magnetic", "MAMAMOO HIP", 
+    "MAMAMOO Starry Night", "GFRIEND Me Gustas Tu", "GFRIEND Rough", "IZ*ONE FIESTA", "IZ*ONE Secret Story of the Swan", 
+    "STAYC ASAP", "STAYC RUN2U", "BLACKPINK As If It's Your Last", "BLACKPINK BOOMBAYAH", "BLACKPINK Playing With Fire", 
+    "BTS FIRE", "BTS DNA", "BTS IDOL", "BTS Spring Day", "TWICE CHEER UP", 
+    "TWICE YES or YES", "TWICE Dance The Night Away", "NewJeans ETA", "NewJeans Cookie", "aespa Girls", 
+    "aespa Supernova", "aespa Armageddon", "IVE Kitsch", "LE SSERAFIM EASY", "LE SSERAFIM SMART", 
+    "(G)I-DLE HWAA", "(G)I-DLE Oh my god", "SEVENTEEN Left & Right", "Stray Kids Thunderous", "NCT DREAM Hot Sauce"
   ],
   '動漫神曲': [
     "YOASOBI アイドル", "YOASOBI 夜に駆ける", "YOASOBI 怪物", "YOASOBI 祝福", "YOASOBI 群青",
@@ -46,7 +67,17 @@ const POOLS = {
     "Official髭男dism ミックスナッツ", "Official髭男dism Cry Baby", "Official髭男dism Pretender", "Official髭男dism 宿命", "Official髭男dism イエスタデイ",
     "キタニタツヤ 青のすみか", "Vaundy CHAINSAW BLOOD", "Creepy Nuts Bling-Bang-Bang-Born", "TK from 凛として時雨 unravel", "FLOW GO!!!",
     "SPYAIR サクラミツツキ", "SPYAIR イマジネーション", "藍井エイル IGNITE", "藍井エイル INNOCENCE", "藍井エイル シリウス",
-    "KANA-BOON シルエット", "いきものがかり ブルーバード", "YUI again", "高橋洋子 残酷な天使のテーゼ", "和田光司 Butter-Fly"
+    "KANA-BOON シルエット", "いきものがかり ブルーバード", "YUI again", "高橋洋子 残酷な天使のテーゼ", "和田光司 Butter-Fly",
+    "YOASOBI 勇者", "YOASOBI たぶん", "LiSA シルシ", "LiSA だってアタシのヒーロー。", "Aimer 蝶々結び", 
+    "Aimer カタオモイ", "米津玄師 M八七", "米津玄師 地球儀", "米津玄師 打上花火", "RADWIMPS 夢灯籠", 
+    "RADWIMPS 祝祭", "King Gnu 飛行艇", "King Gnu カメレオン", "Official髭男dism ホワイトノイズ", "Official髭男dism 115万キロのフィルム", 
+    "ヨルシカ ただ君に晴れ", "ヨルシカ だから僕は音楽を辞めた", "ヨルシカ 春泥棒", "ずっと真夜中でいいのに。 秒針を噛む", "ずっと真夜中でいいのに。 勘冴えて悔しいわ", 
+    "Ado うっせぇわ", "Ado 新時代", "Ado 唱", "Ado 踊", "Eve 廻廻奇譚", 
+    "Eve ドラマツルギー", "Eve ナンセンス文学", "星野源 喜劇", "星野源 恋", "yama 春を告げる", 
+    "優里 ドライフラワー", "優里 ベテルギウス", "Vaundy 怪獣の花唄", "Vaundy 踊り子", "マカロニえんぴつ なんでもないよ、", 
+    "Saucy Dog シンデレラボーイ", "Mrs. GREEN APPLE インフェルノ", "Mrs. GREEN APPLE ダンスホール", "Mrs. GREEN APPLE 青と夏", "BUMP OF CHICKEN 天体観測", 
+    "BUMP OF CHICKEN アカシア", "UNISON SQUARE GARDEN シュガーソングとビターステップ", "DOES 曇天", "DOES 修羅", "UVERworld 核心", 
+    "UVERworld Touch off", "ポルノグラフィティ メリッサ", "ポルノグラフィティ サウダージ", "スキマスイッチ 奏(かなで)", "supercell 君の知らない物語"
   ],
   '流行英語': [
     "Taylor Swift Cruel Summer", "Taylor Swift Anti-Hero", "Taylor Swift Blank Space", "Taylor Swift Shake It Off", "Taylor Swift Love Story",
@@ -58,7 +89,17 @@ const POOLS = {
     "Justin Bieber Peaches", "Justin Bieber Sorry", "Justin Bieber Love Yourself", "Justin Bieber Baby", "Justin Bieber Ghost",
     "The Weeknd Blinding Lights", "The Weeknd Starboy", "The Weeknd Save Your Tears", "The Weeknd The Hills", "The Weeknd Can't Feel My Face",
     "Harry Styles As It Was", "Harry Styles Watermelon Sugar", "Harry Styles Sign of the Times", "Harry Styles Adore You", "Harry Styles Late Night Talking",
-    "Billie Eilish bad guy", "Billie Eilish everything i wanted", "Billie Eilish Therefore I Am", "Billie Eilish ocean eyes", "Billie Eilish happier than ever"
+    "Billie Eilish bad guy", "Billie Eilish everything i wanted", "Billie Eilish Therefore I Am", "Billie Eilish ocean eyes", "Billie Eilish happier than ever",
+    "Taylor Swift You Belong With Me", "Taylor Swift I Knew You Were Trouble", "Taylor Swift We Are Never Ever Getting Back Together", "Ed Sheeran Galway Girl", "Ed Sheeran Shivers", 
+    "Bruno Mars Grenade", "Bruno Mars Treasure", "Adele Water Under the Bridge", "Adele Make You Feel My Love", "Coldplay Paradise", 
+    "Coldplay The Scientist", "Dua Lipa IDGAF", "Dua Lipa One Kiss", "Justin Bieber Intentions", "Justin Bieber Yummy", 
+    "The Weeknd Die For You", "The Weeknd Earned It", "Harry Styles Falling", "Harry Styles Golden", "Billie Eilish when the party's over", 
+    "Billie Eilish lovely", "Ariana Grande 7 rings", "Ariana Grande thank u, next", "Ariana Grande positions", "Ariana Grande Into You", 
+    "Olivia Rodrigo drivers license", "Olivia Rodrigo good 4 u", "Olivia Rodrigo vampire", "Shawn Mendes Senorita", "Shawn Mendes Treat You Better", 
+    "Shawn Mendes Stitches", "Charlie Puth Attention", "Charlie Puth We Don't Talk Anymore", "Charlie Puth Light Switch", "Maroon 5 Sugar", 
+    "Maroon 5 Payphone", "Maroon 5 Girls Like You", "Imagine Dragons Believer", "Imagine Dragons Radioactive", "Imagine Dragons Demons", 
+    "Post Malone Circles", "Post Malone Sunflower", "Katy Perry Roar", "Katy Perry Dark Horse", "Katy Perry Firework", 
+    "Lady Gaga Bad Romance", "Lady Gaga Poker Face", "Lady Gaga Shallow", "Sam Smith Stay With Me", "Sam Smith Unholy"
   ]
 };
 
@@ -238,27 +279,43 @@ function calculateVotes(roomId) {
 
     if (maxVotes === 0) eliminated = [];
 
-    const undercoverDied = eliminated.includes(room.undercoverId);
-    const winner = undercoverDied ? '平民勝利' : '臥底勝利';
-    
-    if (winner === '平民勝利') {
-      Object.keys(room.players).forEach(uid => {
-        if (uid !== room.undercoverId) {
-          room.scores[uid] = (room.scores[uid] || 0) + 1;
-        }
-      });
+    // 全新雙臥底與勝負判斷邏輯
+    const deadUndercovers = room.undercoverIds.filter(id => eliminated.includes(id));
+    const survivingUndercovers = room.undercoverIds.filter(id => !eliminated.includes(id));
+    const civilians = Object.keys(room.players).filter(id => !room.undercoverIds.includes(id));
+
+    let winnerText = '';
+
+    if (room.undercoverIds.length === 1) {
+      // 單臥底局
+      if (deadUndercovers.length > 0) {
+        winnerText = '平民勝利';
+        civilians.forEach(uid => room.scores[uid] = (room.scores[uid] || 0) + 1);
+      } else {
+        winnerText = '臥底勝利';
+        room.scores[room.undercoverIds[0]] = (room.scores[room.undercoverIds[0]] || 0) + 3;
+      }
     } else {
-      if (room.players[room.undercoverId]) {
-        room.scores[room.undercoverId] = (room.scores[room.undercoverId] || 0) + 3;
+      // 多人局 (雙臥底)
+      if (deadUndercovers.length === 0) {
+        winnerText = '雙臥底大獲全勝'; // 臥底都沒被抓
+        room.undercoverIds.forEach(uid => room.scores[uid] = (room.scores[uid] || 0) + 3);
+      } else if (deadUndercovers.length === 1) {
+        winnerText = '平民與倖存臥底獲勝'; // 抓到一個臥底，另一個臥底背叛隊友一起贏
+        civilians.forEach(uid => room.scores[uid] = (room.scores[uid] || 0) + 1);
+        survivingUndercovers.forEach(uid => room.scores[uid] = (room.scores[uid] || 0) + 1);
+      } else if (deadUndercovers.length === 2) {
+        winnerText = '平民完全勝利'; // 兩個臥底同時被抓出 (完美局)
+        civilians.forEach(uid => room.scores[uid] = (room.scores[uid] || 0) + 2); // 完美抓出雙臥底給 2 分獎勵
       }
     }
 
     const eliminatedData = eliminated.map(id => ({
       name: room.players[id]?.name || '未知',
-      isUndercover: id === room.undercoverId
+      isUndercover: room.undercoverIds.includes(id)
     }));
     
-    const undercoverName = room.players[room.undercoverId]?.name || '未知';
+    const undercoverNames = room.undercoverIds.map(id => room.players[id]?.name || '未知').join('、');
 
     if (!room.historyList) room.historyList = [];
     room.historyList.push({
@@ -266,10 +323,10 @@ function calculateVotes(roomId) {
       category: room.settings.category,
       civilianSong: room.civilianSong,
       undercoverSong: room.undercoverSong,
-      winner: winner
+      winner: winnerText
     });
 
-    const resultData = { winner, eliminatedData, undercoverName, civilianSong: room.civilianSong, undercoverSong: room.undercoverSong };
+    const resultData = { winner: winnerText, eliminatedData, undercoverName: undercoverNames, civilianSong: room.civilianSong, undercoverSong: room.undercoverSong };
     room.lastResult = resultData;
 
     io.to(roomId).emit('GAME_RESULT', resultData);
@@ -289,8 +346,8 @@ io.on('connection', (socket) => {
 
     rooms[roomId] = { 
       hostId: userId, state: 'LOBBY', players: {},
-      settings: { duration: 15, category: '全部' }, // 💡 預設改為「全部」
-      undercoverId: null, votes: {}, isVotingLocked: false,
+      settings: { duration: 15, category: '全部' }, 
+      undercoverIds: [], votes: {}, isVotingLocked: false,
       civilianSong: '', undercoverSong: '',
       playedSongs: [], scores: {}, lastResult: null, historyList: [],
       phaseEndTime: null, playTimeout: null, votingTimeout: null, globalLoadingTimeout: null,
@@ -390,10 +447,13 @@ io.on('connection', (socket) => {
       io.to(roomId).emit('game_starting');
 
       const playerIds = Object.keys(room.players);
-      room.undercoverId = playerIds[Math.floor(Math.random() * playerIds.length)];
+      
+      // 💡 5人以上自動雙臥底機制
+      const undercoverCount = playerIds.length >= 5 ? 2 : 1;
+      const shuffledIds = [...playerIds].sort(() => 0.5 - Math.random());
+      room.undercoverIds = shuffledIds.slice(0, undercoverCount);
       
       let pool = [];
-      // 💡 歌單為「全部」時，將所有陣列混合
       if (room.settings.category === '全部') {
         Object.values(POOLS).forEach(arr => pool = pool.concat(arr));
       } else {
@@ -406,10 +466,10 @@ io.on('connection', (socket) => {
         availablePool = [...pool];
       }
 
-      const shuffled = [...availablePool].sort(() => 0.5 - Math.random());
+      const shuffledSongs = [...availablePool].sort(() => 0.5 - Math.random());
       const isFirstCivilian = Math.random() > 0.5;
-      const civilianQuery = isFirstCivilian ? shuffled[0] : shuffled[1];
-      const undercoverQuery = isFirstCivilian ? shuffled[1] : shuffled[0];
+      const civilianQuery = isFirstCivilian ? shuffledSongs[0] : shuffledSongs[1];
+      const undercoverQuery = isFirstCivilian ? shuffledSongs[1] : shuffledSongs[0];
 
       room.playedSongs.push(civilianQuery, undercoverQuery);
       room.civilianSong = civilianQuery;
@@ -431,7 +491,7 @@ io.on('connection', (socket) => {
       playerIds.forEach(uid => {
         if (!room.players[uid]) return; 
         room.players[uid].isLoaded = false;
-        const targetUrl = (uid === room.undercoverId) ? undercoverUrl : civilianUrl;
+        const targetUrl = room.undercoverIds.includes(uid) ? undercoverUrl : civilianUrl;
         io.to(room.players[uid].socketId).emit('PRELOAD_MUSIC', targetUrl);
       });
 

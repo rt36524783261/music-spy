@@ -91,14 +91,15 @@
             width: 100px; height: 100px; object-fit: cover;
             border-radius: 50%; border: 3px solid #e3a87c;
             box-shadow: 0 8px 20px rgba(139, 115, 85, 0.2);
+            background-color: #fffaf4;
         }
-        /* 左邊貓咪動畫 */
+        /* 左邊歐泥醬動畫 */
         .cat-left { animation: catBobLeft 1s ease-in-out infinite alternate; }
         @keyframes catBobLeft {
             0% { transform: translateY(0) rotate(-2deg); }
             100% { transform: translateY(-8px) rotate(2deg); }
         }
-        /* 右邊貓咪動畫（延遲 0.3秒，產生錯開的搖擺感） */
+        /* 右邊啵嚕醬動畫（延遲 0.3秒產生錯開節奏） */
         .cat-right { animation: catBobRight 1s ease-in-out infinite alternate 0.3s; }
         @keyframes catBobRight {
             0% { transform: translateY(0) rotate(2deg); }
@@ -179,9 +180,7 @@
             <!-- 💡 歐泥醬與啵嚕醬 雙貓並排區塊 -->
             <div id="catWrapper" style="display: none;">
                 <div class="twin-cats-container">
-                    <!-- 左邊放歐泥醬 -->
                     <img src="onijang.png" alt="歐泥醬" class="cat-img cat-left">
-                    <!-- 右邊放啵嚕醬 -->
                     <img src="bolujang.png" alt="啵嚕醬" class="cat-img cat-right">
                 </div>
                 <!-- 💡 專屬動態陪伴文字 -->
@@ -705,7 +704,8 @@
             
             const title = document.getElementById('resultTitle');
             title.innerText = data.winner;
-            title.style.color = (data.winner === '平民勝利') ? '#9cbca7' : '#e07a5f';
+            // 💡 勝利文字若包含「平民」，標題字體顏色改為代表勝利的綠色，否則為臥底紅
+            title.style.color = data.winner.includes('平民') ? '#9cbca7' : '#e07a5f';
             
             const spyEl = document.getElementById('resultSpy');
             spyEl.innerText = data.undercoverName;
