@@ -11,7 +11,7 @@ app.use(express.static(__dirname));
 
 const rooms = {}; 
 
-// 💡 題庫大升級！全面剔除催眠慢歌，400 首皆為「節奏鮮明、律動感強」的派對神曲
+// 💡 5大分類總計 500 首高律動、高反應派對神曲（已全面剔除催眠慢歌）
 const POOLS = {
   '華語流行': [
     "周杰倫 本草綱目", "周杰倫 雙截棍", "周杰倫 牛仔很忙", "周杰倫 霍元甲", "周杰倫 陽光宅男",
@@ -100,6 +100,28 @@ const POOLS = {
     "Katy Perry Dark Horse", "Katy Perry Firework", "Katy Perry California Gurls", "Katy Perry Hot N Cold", "Lady Gaga Bad Romance",
     "Lady Gaga Poker Face", "Lady Gaga Just Dance", "Lady Gaga Rain On Me", "Sam Smith Unholy", "Avicii Wake Me Up",
     "Calvin Harris Summer", "The Chainsmokers Closer", "Alan Walker Faded", "LMFAO Party Rock Anthem", "Carly Rae Jepsen Call Me Maybe"
+  ],
+  '派對洗腦＆台語': [
+    "伍佰 你是我的花朵", "伍佰 樹枝孤鳥", "伍佰 世界第一等", "伍佰 挪威的森林", "伍佰 Last Dance",
+    "伍佰 煞到你", "伍佰 愛情限時批", "伍佰 衝衝衝", "伍佰 心愛的再會啦", "伍佰 背叛",
+    "謝金燕 姐姐", "謝金燕 練舞功", "謝金燕 嗶嗶嗶", "謝金燕 含淚跳恰恰", "謝金燕 叉燒包",
+    "陳雷 歡喜就好", "陳雷 風真透", "葉啟田 愛拚才會贏", "蔡小虎 愛人醉落去", "王識賢 勝者為王",
+    "荒山亮 轟動武林", "黃妃 追追追", "張秀卿 車站", "羅時豐 歡喜來恰恰", "閃靈 皇軍",
+    "玖壹壹 Local", "玖壹壹 鄉下來的", "玖壹壹 來個蹦蹦", "玖壹壹 打鐵", "玖壹壹 9453",
+    "玖壹壹 癡情男子漢", "玖壹壹 歪國人", "玖壹壹 派對俠", "玖壹壹 嘎勒阿勒", "玖壹壹 明年見",
+    "美秀集團 捲菸", "美秀集團 電火王", "美秀集團 我要你愛", "美秀集團 擋一根", "美秀集團 懲罰",
+    "美秀集團 心悶", "滅火器 島嶼天光", "滅火器 長途夜車", "滅火器 繼續向前行", "滅火器 海上的人",
+    "怕胖團 魚", "怕胖團 當你在最需要的時候", "茄子蛋 浪流連", "茄子蛋 恰似你的溫柔", "茄子蛋 閣愛妳一擺",
+    "草東沒有派對 大風吹", "草東沒有派對 山海", "草東沒有派對 爛泥", "血肉果汁機 關閉太陽", "康士坦的變化球 美好的事可不可以發生在我身上",
+    "黃明志 漂向北方", "黃明志 玻璃心", "黃明志 擊敗人", "黃明志 買包包換鮑鮑", "黃明志 不想上班",
+    "卜學亮 超跑情人夢", "卜學亮 子曰", "中國娃娃 單眼皮女生", "中國娃娃 發財發福中國年", "王蓉 小雞小雞",
+    "筷子兄弟 小蘋果", "大張偉 陽光彩虹小白馬", "鳳凰傳奇 最炫民族風", "寶石Gem 野狼Disco", "ASMRZ 晚安大小姐",
+    "張震嶽 愛我別走", "張震嶽 自由", "張震嶽 乾妹妹", "MC HotDog 差不多先生", "MC HotDog 貧民百萬歌星",
+    "頑童MJ116 South Side", "頑童MJ116 少年董", "五堅情 兵變", "五堅情 All Day", "九澤CP 天黑請閉眼",
+    "鼓鼓 為愛而愛", "芭比 使勁搖", "羅百吉 吹喇叭", "麻吉 麻吉", "麻吉 跳痛",
+    "動力火車 我很好騙", "高爾宣 Without You", "婁峻碩 Colorful", "派偉俊 I Hate Myself Sometimes", "理想混蛋 離開的一路上",
+    "Pikotaro PPAP", "Ylvis The Fox", "O-Zone Dragostea Din Tei", "Aqua Barbie Girl", "Crazy Frog Axel F",
+    "Boney M. Rasputin", "PSY Gentleman", "Luis Fonsi Despacito", "Rick Astley Never Gonna Give You Up", "Earth Wind Fire September"
   ]
 };
 
@@ -115,12 +137,11 @@ async function fetchAppleMusicPreview(keyword) {
   }
 }
 
-// 取得歌手名稱（空白鍵前半部），防止平民跟臥底抽到同一個歌手
 function getArtistName(songQuery) {
   return String(songQuery || '').trim().split(/\s+/)[0];
 }
 
-// 💡 智慧抽歌與自動重試機制（防抓歌失敗、防同歌手）
+// 智慧抽歌與自動重試機制（防抓歌失敗、防同歌手）
 async function pickTwoValidSongs(availablePool) {
   const shuffled = [...availablePool].sort(() => 0.5 - Math.random());
   let firstSong = null;
@@ -134,7 +155,6 @@ async function pickTwoValidSongs(availablePool) {
         firstSong = { query: candidate, url, artist: getArtistName(candidate) };
       }
     } else if (!secondSong) {
-      // 強制不同歌手，避免曲風與聲音太過相近
       if (getArtistName(candidate) === firstSong.artist) continue;
       const url = await fetchAppleMusicPreview(candidate);
       if (url) {
@@ -146,7 +166,7 @@ async function pickTwoValidSongs(availablePool) {
   return (firstSong && secondSong) ? [firstSong, secondSong] : null;
 }
 
-// 💡 撞名自動編號防呆（預設：飛天巴庫）
+// 撞名自動編號防呆（預設：飛天巴庫）
 function getUniquePlayerName(room, rawName, currentUserId) {
   let baseName = String(rawName || '').trim();
   if (!baseName) baseName = '飛天巴庫';
@@ -167,6 +187,44 @@ function getUniquePlayerName(room, rawName, currentUserId) {
   return `${baseName} ${counter}`;
 }
 
+// 💡 根據房間人數與模式決定「臥底」與「白板」人數（確保永遠至少有平民）
+function assignRoles(playerIds, roleMode) {
+  const count = playerIds.length;
+  const shuffled = [...playerIds].sort(() => 0.5 - Math.random());
+  let spyCount = 0;
+  let wbCount = 0;
+
+  if (roleMode === '標準模式') {
+    spyCount = count >= 5 ? 2 : 1;
+    wbCount = 0;
+  } else if (roleMode === '純白板模式') {
+    spyCount = 0;
+    wbCount = count >= 5 ? 2 : 1;
+  } else {
+    // 預設：加入白板模式
+    if (count <= 3) {
+      // 2~3人：隨機 1 臥底 或 1 白板，讓異常者自己也猜不透全場配置
+      if (Math.random() < 0.5) {
+        spyCount = 1; wbCount = 0;
+      } else {
+        spyCount = 0; wbCount = 1;
+      }
+    } else if (count <= 5) {
+      // 4~5人：1 臥底 + 1 白板
+      spyCount = 1;
+      wbCount = 1;
+    } else {
+      // 6人以上：2 臥底 + 1 白板
+      spyCount = 2;
+      wbCount = 1;
+    }
+  }
+
+  const undercoverIds = shuffled.slice(0, spyCount);
+  const whiteboardIds = shuffled.slice(spyCount, spyCount + wbCount);
+  return { undercoverIds, whiteboardIds };
+}
+
 app.get('/', (req, res) => { res.sendFile(__dirname + '/index.html'); });
 
 function broadcastRoomState(roomId) {
@@ -179,6 +237,9 @@ function broadcastRoomState(roomId) {
   delete safeRoom.globalLoadingTimeout;
   delete safeRoom.singlePlayerIdleTimer;
   delete safeRoom.roundPlayers;
+  delete safeRoom.reactionTimestamps;
+  delete safeRoom.undercoverIds;
+  delete safeRoom.whiteboardIds;
   
   if (room.phaseEndTime) {
     safeRoom.phaseRemaining = Math.max(0, room.phaseEndTime - Date.now());
@@ -222,7 +283,6 @@ function removePlayer(roomId, userId, kickMsg = null) {
   delete room.scores[userId];
   delete room.votes[userId];
 
-  // 清除其他人投給該名已離開玩家的票
   for (const voter in room.votes) {
     if (room.votes[voter] === userId) {
       delete room.votes[voter];
@@ -240,7 +300,20 @@ function removePlayer(roomId, userId, kickMsg = null) {
     if (room.hostId === userId) {
       room.hostId = remaining[0]; 
     }
-    if (room.state === 'LOADING') checkDownloadProgress(roomId);
+    // 💡 遊戲中途若退到只剩 1 人，自動中止本局返回大廳防呆
+    if (room.state !== 'LOBBY' && remaining.length < 2) {
+      if (room.playTimeout) clearTimeout(room.playTimeout);
+      if (room.votingTimeout) clearTimeout(room.votingTimeout);
+      if (room.globalLoadingTimeout) clearTimeout(room.globalLoadingTimeout);
+      room.state = 'LOBBY';
+      room.phaseEndTime = null;
+      Object.values(room.players).forEach(p => p.isReady = false);
+      io.to(roomId).emit('round_aborted', '其他玩家已離開，人數不足自動返回房間');
+    } else if (room.state === 'LOADING') {
+      checkDownloadProgress(roomId);
+    } else if (room.state === 'VOTING') {
+      io.to(roomId).emit('votes_live_update', { votes: room.votes });
+    }
     broadcastRoomState(roomId);
     resetSinglePlayerIdleTimer(roomId);
   }
@@ -287,7 +360,12 @@ function startPlayingPhase(roomId) {
   room.state = 'PLAYING';
   room.phaseEndTime = Date.now() + (room.settings.duration * 1000); 
   broadcastRoomState(roomId);
-  io.to(roomId).emit('START_PLAYING_MUSIC');
+
+  // 個別通知每位玩家開播（白板玩家收到 isWhiteboard: true 會自動靜音並顯示白板提示）
+  for (const uid in room.players) {
+    const isWb = room.whiteboardIds.includes(uid);
+    io.to(room.players[uid].socketId).emit('START_PLAYING_MUSIC', { isWhiteboard: isWb });
+  }
   
   room.playTimeout = setTimeout(() => {
     if (rooms[roomId]) {
@@ -295,7 +373,6 @@ function startPlayingPhase(roomId) {
       rooms[roomId].phaseEndTime = Date.now() + 20000;
       broadcastRoomState(roomId);
       
-      // 完整 20 秒投票時間，不提早結束，讓玩家自由換票心理戰
       rooms[roomId].votingTimeout = setTimeout(() => {
         calculateVotes(roomId);
       }, 20000); 
@@ -316,7 +393,7 @@ function checkDownloadProgress(roomId) {
   }
 }
 
-// 💡 全新個人戰計分與明細結算邏輯
+// 全新個人戰計分與明細結算邏輯（含臥底與白板）
 function calculateVotes(roomId) {
   try {
     const room = rooms[roomId];
@@ -328,10 +405,9 @@ function calculateVotes(roomId) {
     room.state = 'LOBBY';
     room.phaseEndTime = null;
 
-    // 使用開局時的玩家快照（加上目前房內玩家），確保中途有人斷線也不會報錯
     const participantIds = Object.keys(room.roundPlayers || room.players);
+    const badGuyIds = [...room.undercoverIds, ...room.whiteboardIds];
 
-    // 統計每個人被投了幾票
     const votesReceived = {};
     participantIds.forEach(uid => { votesReceived[uid] = 0; });
 
@@ -342,31 +418,33 @@ function calculateVotes(roomId) {
       }
     }
 
-    // 判斷臥底生死狀態（得票 == 0 為潛伏成功，>= 1 為被識破）
-    let survivingSpyCount = 0;
-    let caughtSpyCount = 0;
-    room.undercoverIds.forEach(spyId => {
-      if ((votesReceived[spyId] || 0) === 0) {
-        survivingSpyCount++;
+    let survivingBadCount = 0;
+    let caughtBadCount = 0;
+    badGuyIds.forEach(badId => {
+      if ((votesReceived[badId] || 0) === 0) {
+        survivingBadCount++;
       } else {
-        caughtSpyCount++;
+        caughtBadCount++;
       }
     });
 
     let winnerText = '';
-    if (caughtSpyCount === 0) {
-      winnerText = '🔥 臥底完美潛伏！';
-    } else if (survivingSpyCount === 0) {
-      winnerText = '🎯 臥底遭到識破！';
+    if (caughtBadCount === 0) {
+      winnerText = '🔥 潛伏者完美勝出！';
+    } else if (survivingBadCount === 0) {
+      winnerText = '🎯 潛伏者全數識破！';
     } else {
-      winnerText = '⚡ 一潛伏、一被識破！';
+      winnerText = '⚡ 有人潛伏、有人被抓！';
     }
 
-    // 計算每位玩家的個人得分與結算明細
     const playerResults = [];
     participantIds.forEach(uid => {
       const pInfo = (room.roundPlayers && room.roundPlayers[uid]) || room.players[uid] || { name: '未知玩家' };
       const isUndercover = room.undercoverIds.includes(uid);
+      const isWhiteboard = room.whiteboardIds.includes(uid);
+      const isBadGuy = isUndercover || isWhiteboard;
+      const role = isUndercover ? 'UNDERCOVER' : (isWhiteboard ? 'WHITEBOARD' : 'CIVILIAN');
+
       const targetId = room.votes[uid] || null;
       const targetInfo = targetId ? ((room.roundPlayers && room.roundPlayers[targetId]) || room.players[targetId]) : null;
       const votedForName = targetInfo ? targetInfo.name : null;
@@ -374,8 +452,8 @@ function calculateVotes(roomId) {
       let earnedScore = 0;
       const notes = [];
 
-      // 規則 1：臥底 0 票完美潛伏得 2 分；被投 1 票以上潛伏失敗 (0分)
-      if (isUndercover) {
+      // 規則 1：臥底或白板 0 票完美潛伏得 2 分
+      if (isBadGuy) {
         const myVotes = votesReceived[uid] || 0;
         if (myVotes === 0) {
           earnedScore += 2;
@@ -385,10 +463,14 @@ function calculateVotes(roomId) {
         }
       }
 
-      // 規則 2：任何人（平民或另一位臥底）投中臥底皆得 1 分
-      if (targetId && targetId !== uid && room.undercoverIds.includes(targetId)) {
+      // 規則 2：任何人投中臥底或白板皆得 1 分
+      if (targetId && targetId !== uid && badGuyIds.includes(targetId)) {
         earnedScore += 1;
-        notes.push('抓中臥底+1');
+        if (room.undercoverIds.includes(targetId)) {
+          notes.push('抓中臥底+1');
+        } else {
+          notes.push('抓中白板+1');
+        }
       }
 
       if (room.scores[uid] !== undefined) {
@@ -398,16 +480,19 @@ function calculateVotes(roomId) {
       playerResults.push({
         uid,
         name: pInfo.name,
-        isUndercover,
+        role,
         votedForName,
         earnedScore,
         note: notes.join('、')
       });
     });
 
-    // 排序結算明細：臥底排最上面，接著依本局得分高到低排列
+    // 排序：臥底 -> 白板 -> 平民，同身分依本局得分高到低
+    const rolePriority = { UNDERCOVER: 1, WHITEBOARD: 2, CIVILIAN: 3 };
     playerResults.sort((a, b) => {
-      if (a.isUndercover !== b.isUndercover) return a.isUndercover ? -1 : 1;
+      if (rolePriority[a.role] !== rolePriority[b.role]) {
+        return rolePriority[a.role] - rolePriority[b.role];
+      }
       return b.earnedScore - a.earnedScore;
     });
 
@@ -415,22 +500,29 @@ function calculateVotes(roomId) {
       .map(id => ((room.roundPlayers && room.roundPlayers[id]) || room.players[id])?.name || '未知')
       .join('、');
 
+    const whiteboardNames = room.whiteboardIds
+      .map(id => ((room.roundPlayers && room.roundPlayers[id]) || room.players[id])?.name || '未知')
+      .join('、');
+
+    const hasUndercover = room.undercoverIds.length > 0;
+
     if (!room.historyList) room.historyList = [];
     room.historyList.push({
       round: room.historyList.length + 1,
       category: room.settings.category,
       civilianSong: room.civilianSong,
-      undercoverSong: room.undercoverSong,
+      undercoverSong: hasUndercover ? room.undercoverSong : '',
       winner: winnerText
     });
 
     const resultData = {
       winner: winnerText,
       undercoverName: undercoverNames,
+      whiteboardName: whiteboardNames,
       civilianSong: room.civilianSong,
-      undercoverSong: room.undercoverSong,
+      undercoverSong: hasUndercover ? room.undercoverSong : '',
       civilianUrl: room.civilianUrl,
-      undercoverUrl: room.undercoverUrl,
+      undercoverUrl: hasUndercover ? room.undercoverUrl : '',
       playerResults
     };
     room.lastResult = resultData;
@@ -451,12 +543,12 @@ io.on('connection', (socket) => {
 
     rooms[roomId] = { 
       hostId: userId, state: 'LOBBY', players: {},
-      settings: { duration: 15, category: '全部' }, 
-      undercoverIds: [], votes: {},
+      settings: { duration: 15, category: '全部', roleMode: '加入白板' }, 
+      undercoverIds: [], whiteboardIds: [], votes: {},
       civilianSong: '', undercoverSong: '',
       civilianUrl: '', undercoverUrl: '',
       playedSongs: [], scores: {}, lastResult: null, historyList: [],
-      roundPlayers: {},
+      roundPlayers: {}, reactionTimestamps: {},
       phaseEndTime: null, playTimeout: null, votingTimeout: null, globalLoadingTimeout: null,
       singlePlayerIdleTimer: null
     };
@@ -534,7 +626,11 @@ io.on('connection', (socket) => {
   socket.on('update_settings', ({ roomId, userId, settings }) => {
     const room = rooms[roomId];
     if (room && room.hostId === userId) {
-      room.settings = settings;
+      room.settings = {
+        duration: parseInt(settings.duration) || 15,
+        category: settings.category || '全部',
+        roleMode: settings.roleMode || '加入白板'
+      };
       broadcastRoomState(roomId);
       resetSinglePlayerIdleTimer(roomId);
     }
@@ -559,7 +655,6 @@ io.on('connection', (socket) => {
 
   socket.on('start_game', async ({ roomId, userId }) => {
     const room = rooms[roomId];
-    // 💡 防連點防呆：嚴格限制只有 LOBBY 狀態可啟動遊戲
     if (!room || room.hostId !== userId || room.state !== 'LOBBY') return;
 
     const playerIds = Object.keys(room.players);
@@ -572,7 +667,6 @@ io.on('connection', (socket) => {
       room.singlePlayerIdleTimer = null;
     }
 
-    // 建立本局玩家名單快照
     room.roundPlayers = {};
     playerIds.forEach(uid => {
       room.roundPlayers[uid] = { name: room.players[uid].name };
@@ -580,12 +674,11 @@ io.on('connection', (socket) => {
 
     io.to(roomId).emit('game_starting');
 
-    // 5人以上自動雙臥底機制（雙臥底聽同一首臥底歌）
-    const undercoverCount = playerIds.length >= 5 ? 2 : 1;
-    const shuffledIds = [...playerIds].sort(() => 0.5 - Math.random());
-    room.undercoverIds = shuffledIds.slice(0, undercoverCount);
+    // 依角色模式分配臥底與白板
+    const { undercoverIds, whiteboardIds } = assignRoles(playerIds, room.settings.roleMode);
+    room.undercoverIds = undercoverIds;
+    room.whiteboardIds = whiteboardIds;
     
-    // 當選擇「全部」時，先隨機抽一個分類，確保平民與臥底曲風同語系但不同歌手
     let targetCategory = room.settings.category;
     if (targetCategory === '全部') {
       const categories = Object.keys(POOLS);
@@ -617,6 +710,7 @@ io.on('connection', (socket) => {
     room.civilianUrl = civilianTrack.url;
     room.undercoverUrl = undercoverTrack.url;
 
+    // 💡 白板玩家一樣會收到 civilianTrack.url 進行預載，讓全場下載速度一致不穿幫
     Object.keys(room.players).forEach(uid => {
       if (!room.players[uid]) return; 
       room.players[uid].isLoaded = false;
@@ -624,7 +718,6 @@ io.on('connection', (socket) => {
       io.to(room.players[uid].socketId).emit('PRELOAD_MUSIC', targetUrl);
     });
 
-    // 💡 溫和超時防呆：12秒後若有人網路卡住未回報完成，直接強制全員開播，不踢人、不刪分
     room.globalLoadingTimeout = setTimeout(() => {
       const currentRoom = rooms[roomId];
       if (currentRoom && currentRoom.state === 'LOADING') {
@@ -645,7 +738,6 @@ io.on('connection', (socket) => {
   socket.on('submit_vote', ({ roomId, userId, targetId }) => {
     const room = rooms[roomId];
     if (!room || room.state !== 'VOTING') return;
-    // 禁止投給自己
     if (targetId === userId) return;
 
     if (targetId === null || !room.players[targetId]) {
@@ -654,9 +746,27 @@ io.on('connection', (socket) => {
       room.votes[userId] = targetId;
     }
 
-    // 即時向全房間廣播最新亮票狀態（誰投了誰）
     io.to(roomId).emit('votes_live_update', {
       votes: room.votes
+    });
+  });
+
+  // 💡 心理戰快捷氣泡（含後端防洗版冷卻驗證）
+  const ALLOWED_REACTIONS = ['🤣 演很大喔', '👀 我看穿了', '😱 別亂投我', '🤫 別跟風！'];
+  socket.on('send_reaction', ({ roomId, userId, text }) => {
+    const room = rooms[roomId];
+    if (!room || !room.players[userId]) return;
+    if (room.state !== 'PLAYING' && room.state !== 'VOTING') return;
+    if (!ALLOWED_REACTIONS.includes(text)) return;
+
+    const now = Date.now();
+    const lastTime = room.reactionTimestamps[userId] || 0;
+    if (now - lastTime < 1200) return;
+    room.reactionTimestamps[userId] = now;
+
+    io.to(roomId).emit('reaction_bubble', {
+      senderName: room.players[userId].name,
+      text
     });
   });
 });

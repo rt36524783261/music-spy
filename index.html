@@ -2,32 +2,57 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>音樂臥底</title>
     <script src="/socket.io/socket.io.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
+        * {
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
         body { 
             background: radial-gradient(circle at center, #fffaf4 0%, #f4ece1 100%); 
             color: #4a4036; font-family: 'Noto Sans TC', sans-serif; 
             display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; 
+            user-select: none; -webkit-user-select: none;
         }
         
         .container { 
             background-color: #ffffff; 
             background-image: radial-gradient(#f0e9df 1px, transparent 1px);
             background-size: 16px 16px;
-            padding: 35px 30px; border-radius: 24px; width: 90%; max-width: 540px; 
+            padding: 32px 26px; border-radius: 24px; width: 92%; max-width: 540px; 
             box-shadow: 0 15px 35px rgba(139, 115, 85, 0.12); 
             text-align: center; position: relative; overflow: hidden; 
             border: 2px solid #eae2d5;
             box-sizing: border-box;
+            transition: border-color 0.3s, box-shadow 0.3s;
         }
         .content-wrapper { position: relative; z-index: 1; }
 
-        h1 { margin-top: 0; margin-bottom: 20px; color: #6b5b4e; font-weight: 900; letter-spacing: 2px; }
-        .label { font-size: 14px; font-weight: bold; color: #a39589; margin-bottom: 10px; display: block; }
-        input, select { padding: 14px; font-size: 16px; width: 80%; margin-bottom: 20px; border-radius: 12px; border: 2px solid #f2ede4; background: #faf8f5; color: #5a4b41; text-align: center; font-weight: bold; transition: all 0.3s; box-sizing: border-box; }
+        /* 💡 功能 C：投票最後 5 秒心跳紅框閃爍特效 */
+        @keyframes urgentPulse {
+            0% { border-color: #eae2d5; box-shadow: 0 15px 35px rgba(139, 115, 85, 0.12); }
+            50% { border-color: #e07a5f; box-shadow: 0 0 28px rgba(224, 122, 95, 0.55); }
+            100% { border-color: #eae2d5; box-shadow: 0 15px 35px rgba(139, 115, 85, 0.12); }
+        }
+        .container.urgent-border {
+            animation: urgentPulse 0.8s ease-in-out infinite;
+        }
+        @keyframes numberBeat {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.18); color: #d64527; }
+            100% { transform: scale(1); }
+        }
+        .urgent-number {
+            animation: numberBeat 0.5s ease-in-out infinite;
+            display: inline-block;
+        }
+
+        h1 { margin-top: 0; margin-bottom: 18px; color: #6b5b4e; font-weight: 900; letter-spacing: 2px; }
+        .label { font-size: 14px; font-weight: bold; color: #a39589; margin-bottom: 8px; display: block; }
+        input, select { padding: 13px; font-size: 16px; width: 85%; margin-bottom: 16px; border-radius: 12px; border: 2px solid #f2ede4; background: #faf8f5; color: #5a4b41; text-align: center; font-weight: bold; transition: all 0.3s; box-sizing: border-box; user-select: auto; -webkit-user-select: auto; }
         input:focus, select:focus { outline: none; border-color: #e3a87c; background: #ffffff; }
 
         button { padding: 14px 24px; font-size: 16px; font-weight: 700; margin: 10px 5px; cursor: pointer; border-radius: 12px; border: none; background-color: #e3a87c; color: white; box-shadow: 0 4px 12px rgba(227, 168, 124, 0.3); transition: all 0.2s; white-space: nowrap; font-family: inherit; }
@@ -65,15 +90,16 @@
 
         .room-header { border-bottom: 2px dashed #f2ede4; padding-bottom: 15px; margin-bottom: 20px; display: flex; flex-direction: column; align-items: center;}
         #displayRoomId { font-size: 32px; font-weight: 900; color: #cf9366; margin: 0 0 10px 0; letter-spacing: 4px;}
-        .room-settings-info { width: 100%; font-size: 14px; color: #a39589; margin-top: 10px; font-weight: bold; }
+        .room-settings-info { width: 100%; font-size: 13px; color: #a39589; margin-top: 10px; font-weight: bold; }
         
         .player-list-item { font-size: 16px; font-weight: bold; padding: 12px 15px; margin: 8px 0; background: #faf8f5; border-radius: 12px; color: #7a6a5d; border: 1px solid #f2ede4; display: flex; justify-content: space-between; align-items: center; overflow: hidden; }
         .player-info-left { display: flex; align-items: center; flex: 1; min-width: 0; margin-right: 10px; }
         .player-name-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+        .player-score-tag { font-size: 12px; color: #cf9366; background: #fff4eb; border: 1px solid #f2dcc9; border-radius: 6px; padding: 1px 6px; margin-left: 6px; flex-shrink: 0; }
         .player-status-right { white-space: nowrap; flex-shrink: 0; display: flex; align-items: center; font-size: 14px; }
 
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(74, 64, 54, 0.6); z-index: 999; justify-content: center; align-items: center; backdrop-filter: blur(3px); }
-        .modal-box { background: #ffffff; padding: 25px; border-radius: 20px; width: 85%; max-width: 380px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); text-align: center; max-height: 80vh; display: flex; flex-direction: column; border: 2px solid #eae2d5; box-sizing: border-box; }
+        .modal-box { background: #ffffff; padding: 25px; border-radius: 20px; width: 88%; max-width: 380px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); text-align: center; max-height: 82vh; display: flex; flex-direction: column; border: 2px solid #eae2d5; box-sizing: border-box; }
         .modal-msg { margin-bottom: 15px; font-size: 18px; font-weight: bold; color: #6b5b4e; }
         .modal-btns { display: flex; justify-content: center; gap: 10px; margin-top: 15px; flex-wrap: wrap; }
 
@@ -86,7 +112,7 @@
         /* 歐泥醬 & 啵嚕醬 雙貓並排搖晃動畫 */
         .twin-cats-container { display: flex; justify-content: center; gap: 15px; margin: 15px auto 5px auto; }
         .cat-img {
-            width: 100px; height: 100px; object-fit: cover;
+            width: 96px; height: 96px; object-fit: cover;
             border-radius: 50%; border: 3px solid #e3a87c;
             box-shadow: 0 8px 20px rgba(139, 115, 85, 0.2);
             background-color: #fffaf4;
@@ -111,14 +137,14 @@
             transition: width 0.2s linear, background-color 0.3s;
         }
 
-        #countdownNumber, #voteTimer { font-size: 56px; font-weight: 900; color: #e07a5f; text-shadow: 2px 4px 10px rgba(224, 122, 95, 0.2); margin: 5px 0; }
+        #countdownNumber, #voteTimer { font-size: 54px; font-weight: 900; color: #e07a5f; text-shadow: 2px 4px 10px rgba(224, 122, 95, 0.2); margin: 4px 0; }
         
-        /* 💡 防破圖三道鎖：投票網格與即時名條膠囊設計 */
+        /* 💡 防破圖三道鎖 ＋ 被投票左右顫抖特效 */
         .vote-grid { 
             display: grid; 
             grid-template-columns: repeat(2, minmax(0, 1fr)); 
             gap: 10px; 
-            margin-top: 15px; 
+            margin-top: 12px; 
         }
         .vote-btn { 
             padding: 12px 10px; 
@@ -127,7 +153,7 @@
             border-radius: 14px; 
             color: #7a6a5d; 
             cursor: pointer; 
-            transition: all 0.2s; 
+            transition: background-color 0.2s, border-color 0.2s, box-shadow 0.2s; 
             display: flex; 
             flex-direction: column; 
             align-items: center; 
@@ -139,7 +165,7 @@
             margin: 0;
             box-shadow: 0 2px 6px rgba(139, 115, 85, 0.06);
         }
-        .vote-btn:hover:not(.self-btn) { transform: translateY(-2px); border-color: #e3a87c; background: #fffaf4; }
+        .vote-btn:hover:not(.self-btn) { border-color: #e3a87c; background: #fffaf4; }
         .vote-btn.selected { 
             background: #fff4f1; 
             color: #c9654b; 
@@ -153,6 +179,19 @@
             cursor: not-allowed; 
             box-shadow: none;
         }
+        /* 💡 被投 1 票以上時持續左右微幅顫抖 */
+        @keyframes voteTremble {
+            0% { transform: translateX(0) rotate(0deg); }
+            25% { transform: translateX(-2.5px) rotate(-0.8deg); }
+            50% { transform: translateX(2.5px) rotate(0.8deg); }
+            75% { transform: translateX(-2px) rotate(-0.5deg); }
+            100% { transform: translateX(0) rotate(0deg); }
+        }
+        .vote-btn.has-votes {
+            animation: voteTremble 0.35s ease-in-out infinite;
+            border-color: #e07a5f;
+        }
+
         .vote-target-name {
             font-size: 15px;
             font-weight: 900;
@@ -193,9 +232,80 @@
             100% { transform: scale(1); opacity: 1; }
         }
 
-        /* 💡 簡單明瞭的結算畫面設計 */
-        #resultTitle { font-size: 28px; font-weight: 900; margin-bottom: 8px; }
-        .song-reveal-box { background: #faf8f5; border: 1px solid #f2ede4; border-radius: 12px; padding: 12px 15px; margin-bottom: 15px; text-align: left; }
+        /* 💡 功能 A：心理戰氣泡快捷列與飄浮彈幕 */
+        .reaction-bar {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 6px;
+            margin-top: 14px;
+            padding-top: 12px;
+            border-top: 1px dashed #eae2d5;
+        }
+        @media (min-width: 440px) {
+            .reaction-bar { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+        }
+        .btn-react {
+            background: #faf8f5;
+            border: 1.5px solid #eaddcc;
+            color: #6b5b4e;
+            padding: 8px 6px;
+            font-size: 12px;
+            font-weight: 700;
+            border-radius: 10px;
+            margin: 0;
+            box-shadow: none;
+        }
+        .btn-react:hover:not(:disabled) {
+            background: #fff3e6;
+            border-color: #e3a87c;
+            color: #cf9366;
+            transform: translateY(-1px);
+        }
+        .btn-react:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        #bubbleStage {
+            position: fixed;
+            bottom: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 480px;
+            pointer-events: none;
+            z-index: 950;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+        .floating-bubble {
+            background: rgba(74, 64, 54, 0.9);
+            color: #ffffff;
+            padding: 7px 14px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: bold;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+            border: 1.5px solid #e3a87c;
+            animation: floatUpFade 2.4s ease-out forwards;
+            max-width: 90%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        @keyframes floatUpFade {
+            0% { opacity: 0; transform: translateY(15px) scale(0.85); }
+            12% { opacity: 1; transform: translateY(0) scale(1); }
+            80% { opacity: 1; transform: translateY(-18px) scale(1); }
+            100% { opacity: 0; transform: translateY(-30px) scale(0.95); }
+        }
+
+        /* 簡單明瞭的結算畫面設計 */
+        #resultTitle { font-size: 26px; font-weight: 900; margin-bottom: 6px; }
+        .song-reveal-box { background: #faf8f5; border: 1px solid #f2ede4; border-radius: 12px; padding: 12px 15px; margin-bottom: 14px; text-align: left; }
         .song-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 6px 0; }
         .song-row:first-child { border-bottom: 1px dashed #eaddcc; padding-bottom: 10px; margin-bottom: 4px; }
         .song-info-left { flex: 1; min-width: 0; }
@@ -206,7 +316,7 @@
             border: 1px solid #f2ede4;
             border-radius: 12px;
             padding: 10px 12px;
-            margin-bottom: 20px;
+            margin-bottom: 18px;
             max-height: 220px;
             overflow-y: auto;
             text-align: left;
@@ -239,6 +349,7 @@
             flex-shrink: 0;
         }
         .role-spy { background-color: #e07a5f; }
+        .role-wb { background-color: #8e7cc3; }
         .role-civ { background-color: #9cbca7; }
         .score-pill {
             flex-shrink: 0;
@@ -285,11 +396,11 @@
                     <button id="settingBtn" class="btn-outline btn-setting btn-sm" style="display: none;" onclick="openSettings()">遊戲設定</button>
                     <button id="leaveBtn" class="btn-outline btn-sm" onclick="leaveRoom()">退出房間</button>
                 </div>
-                <div class="room-settings-info" id="displaySettings">設定：15秒 | 全部</div>
+                <div class="room-settings-info" id="displaySettings">設定：15秒 | 全部 | 加入白板</div>
             </div>
             <div id="playerList" style="margin: 20px 0; min-height: 150px;"></div>
             
-            <div style="margin-top: 30px; display: flex; justify-content: center; gap: 10px; align-items: center;">
+            <div style="margin-top: 25px; display: flex; justify-content: center; gap: 10px; align-items: center;">
                 <button id="readyBtn" onclick="toggleReady()">準備遊戲</button>
                 <button id="startBtn" class="btn-danger btn-disabled" style="display: none;" disabled onclick="startGame()">開始遊戲</button>
             </div>
@@ -299,7 +410,7 @@
     <div id="playingScreen" class="container" style="display: none;">
         <div class="content-wrapper">
             <h1 id="playStatusTitle" style="color: #cf9366;">音檔下載中...</h1>
-            <p id="playStatusDesc" style="color: #a39589; font-weight: bold;">請確保手機音量已開啟</p>
+            <p id="playStatusDesc" style="color: #a39589; font-weight: bold; margin-bottom: 8px;">請確保手機音量已開啟</p>
             
             <div id="catWrapper" style="display: none;">
                 <div class="twin-cats-container">
@@ -316,25 +427,40 @@
             </div>
 
             <div id="countdownNumber" style="display: none;">--</div>
+            
+            <!-- 聽歌階段心理戰氣泡按鈕 -->
+            <div id="playReactionBar" class="reaction-bar" style="display: none;">
+                <button class="btn-react" onclick="sendReaction('🤣 演很大喔')">🤣 演很大喔</button>
+                <button class="btn-react" onclick="sendReaction('👀 我看穿了')">👀 我看穿了</button>
+                <button class="btn-react" onclick="sendReaction('😱 別亂投我')">😱 別亂投我</button>
+                <button class="btn-react" onclick="sendReaction('🤫 別跟風！')">🤫 別跟風！</button>
+            </div>
+
             <div id="downloadList" style="display: none;"></div>
         </div>
     </div>
 
     <div id="votingScreen" class="container" style="display: none;">
         <div class="content-wrapper">
-            <h1 style="color: #e07a5f; margin-bottom: 8px;">直覺抓臥底！</h1>
-            <p id="voteStatusHint" style="color: #a39589; font-weight: bold; margin: 0; font-size: 14px;">點擊玩家投票，時間結束前皆可換人</p>
+            <h1 style="color: #e07a5f; margin-bottom: 6px;">直覺抓臥底！</h1>
+            <p id="voteStatusHint" style="color: #a39589; font-weight: bold; margin: 0; font-size: 13px;">點擊玩家投票，時間結束前皆可換人</p>
             <div id="voteTimer">--</div>
             <div id="voteGrid" class="vote-grid"></div>
+
+            <!-- 投票階段心理戰氣泡按鈕 -->
+            <div class="reaction-bar">
+                <button class="btn-react" onclick="sendReaction('🤣 演很大喔')">🤣 演很大喔</button>
+                <button class="btn-react" onclick="sendReaction('👀 我看穿了')">👀 我看穿了</button>
+                <button class="btn-react" onclick="sendReaction('😱 別亂投我')">😱 別亂投我</button>
+                <button class="btn-react" onclick="sendReaction('🤫 別跟風！')">🤫 別跟風！</button>
+            </div>
         </div>
     </div>
 
     <div id="resultScreen" class="container" style="display: none;">
         <div class="content-wrapper">
             <h1 id="resultTitle">--</h1>
-            <p style="font-size: 16px; color: #a39589; font-weight: bold; margin: 0 0 15px 0;">
-                本局臥底：<span id="resultSpy" style="color: #e07a5f; font-size: 20px;">--</span>
-            </p>
+            <p id="resultSpyLine" style="font-size: 15px; color: #7a6a5d; font-weight: bold; margin: 0 0 14px 0; line-height: 1.5;"></p>
             
             <div class="song-reveal-box">
                 <div class="song-row">
@@ -344,7 +470,7 @@
                     </div>
                     <button id="previewCivBtn" class="btn-preview" onclick="togglePreview('civ')">🔊 試聽</button>
                 </div>
-                <div class="song-row">
+                <div class="song-row" id="spySongRow">
                     <div class="song-info-left">
                         <span style="font-size: 12px; color: #a39589;">🎧 臥底聽的歌</span>
                         <span id="resultUndercoverSong" class="song-title-text">--</span>
@@ -412,7 +538,14 @@
                 <option value="K-POP">K-POP</option>
                 <option value="動漫神曲">動漫神曲</option>
                 <option value="流行英語">流行英語</option>
+                <option value="派對洗腦＆台語">派對洗腦＆台語</option>
                 <option value="全部" selected>全部</option>
+            </select>
+            <span class="label">角色模式</span>
+            <select id="selectRoleMode">
+                <option value="加入白板" selected>加入白板 (推薦🔥)</option>
+                <option value="標準模式">標準模式 (僅臥底)</option>
+                <option value="純白板模式">純白板模式 (全員抓盲人)</option>
             </select>
             <div class="modal-btns">
                 <button class="btn-secondary" onclick="document.getElementById('settingsModal').style.display='none'">取消</button>
@@ -420,6 +553,9 @@
             </div>
         </div>
     </div>
+
+    <!-- 飄浮心理戰氣泡舞台 -->
+    <div id="bubbleStage"></div>
 
     <div id="toast"></div>
     <audio id="bgm" preload="auto"></audio>
@@ -440,12 +576,13 @@
         let globalHistoryList = [];
         let globalSettingsDuration = 15;
         let lastTickSecond = -1;
+        let amIWhiteboard = false;
+        let reactionCooldown = false;
 
         // 試聽專用狀態
         let previewUrls = { civ: '', spy: '' };
         let currentPreviewType = null;
 
-        // 💡 HTML 安全轉義防呆，防止特殊符號破壞版面
         function escapeHtml(str) {
             return String(str || '')
                 .replace(/&/g, '&amp;')
@@ -455,7 +592,6 @@
                 .replace(/'/g, '&#39;');
         }
 
-        // 解鎖手機瀏覽器音訊權限
         function unlockAudio() {
             const audio = document.getElementById('bgm');
             if (!audio) return;
@@ -530,6 +666,13 @@
             document.getElementById('modalBtnOk').onclick = () => { document.getElementById('customModal').style.display='none'; if(onOk) onOk(); };
         }
 
+        function clearUrgentEffects() {
+            const voteScreen = document.getElementById('votingScreen');
+            const voteTimer = document.getElementById('voteTimer');
+            if (voteScreen) voteScreen.classList.remove('urgent-border');
+            if (voteTimer) voteTimer.classList.remove('urgent-number');
+        }
+
         function stopAllAudio() {
             const audio = document.getElementById('bgm');
             if (audio && !audio.paused) {
@@ -540,6 +683,7 @@
         }
 
         function switchView(viewId) {
+            clearUrgentEffects();
             if (viewId !== 'playingScreen' && viewId !== 'resultScreen') {
                 stopAllAudio();
             }
@@ -553,11 +697,25 @@
             switchView('roomScreen');
         }
 
+        function applyPlayingTextByRole() {
+            const titleEl = document.getElementById('playStatusTitle');
+            const descEl = document.getElementById('playStatusDesc');
+            if (amIWhiteboard) {
+                titleEl.innerText = '🤫 你是【白板】！';
+                descEl.innerText = '手機沒壞！本局你完全沒聲音，快看別人假裝跟著動！';
+            } else {
+                titleEl.innerText = '仔細聽！';
+                descEl.innerText = '觀察大家的表情與節奏，找出誰怪怪的';
+            }
+        }
+
         function startGlobalTimer(remainingMs, elementId, isPlayingPhase = false) {
             clearInterval(globalTimerInterval);
+            clearUrgentEffects();
             if (!remainingMs) return;
 
             const el = document.getElementById(elementId);
+            const voteScreen = document.getElementById('votingScreen');
             const audio = document.getElementById('bgm');
             const localEndTime = Date.now() + remainingMs;
             const totalDurationMs = isPlayingPhase ? (globalSettingsDuration * 1000) : 20000;
@@ -570,11 +728,20 @@
                 if (remainSec <= 0) {
                     remainSec = 0;
                     clearInterval(globalTimerInterval);
+                    clearUrgentEffects();
                     if (isPlayingPhase && audio && !audio.paused) {
                         audio.pause();
                     }
                 }
                 el.innerText = remainSec;
+
+                // 投票最後 5 秒紅框呼吸閃爍特效
+                if (!isPlayingPhase && remainSec > 0 && remainSec <= 5) {
+                    if (voteScreen) voteScreen.classList.add('urgent-border');
+                    el.classList.add('urgent-number');
+                } else if (!isPlayingPhase) {
+                    clearUrgentEffects();
+                }
 
                 if (remainSec > 0 && remainSec <= 3 && remainSec !== lastTickSecond) {
                     playWoodblockTick();
@@ -626,14 +793,30 @@
         function saveSettings() {
             const d = document.getElementById('selectDuration').value;
             const c = document.getElementById('selectCategory').value;
-            socket.emit('update_settings', { roomId: currentRoomId, userId: myUserId, settings: { duration: parseInt(d), category: c } });
+            const r = document.getElementById('selectRoleMode').value;
+            socket.emit('update_settings', {
+                roomId: currentRoomId,
+                userId: myUserId,
+                settings: { duration: parseInt(d), category: c, roleMode: r }
+            });
             document.getElementById('settingsModal').style.display = 'none';
+        }
+
+        // 找出目前最高分（大於 0 分才戴皇冠）
+        function getHighestScore() {
+            let max = 0;
+            for (const uid in globalPlayers) {
+                const s = globalScores[uid] || 0;
+                if (s > max) max = s;
+            }
+            return max;
         }
 
         function renderRankList() {
             const container = document.getElementById('rankListContainer');
             if (!container) return;
             container.innerHTML = '';
+            const maxScore = getHighestScore();
             const sortedPlayerIds = Object.keys(globalPlayers).sort((a, b) => {
                 return (globalScores[b] || 0) - (globalScores[a] || 0); 
             });
@@ -642,11 +825,12 @@
             sortedPlayerIds.forEach(uid => {
                 const p = globalPlayers[uid];
                 const score = globalScores[uid] || 0;
+                const crown = (score > 0 && score === maxScore) ? '👑 ' : '';
                 const item = document.createElement('div');
                 item.className = 'rank-item';
                 item.innerHTML = `
                     <div class="rank-name-box">
-                        <span style="color: #9cbca7; margin-right: 5px;">#${rankIndex}</span>${escapeHtml(p.name)}
+                        <span style="color: #9cbca7; margin-right: 5px;">#${rankIndex}</span>${crown}${escapeHtml(p.name)}
                     </div>
                     <div class="rank-score-box">${score} 分</div>`;
                 item.querySelector('.rank-name-box').onclick = () => showToast(p.name);
@@ -680,11 +864,12 @@
                 container.innerHTML = '<div style="padding: 20px; text-align: center; color: #a39589; font-weight: bold;">目前尚無歷史歌單紀錄</div>';
             } else {
                 globalHistoryList.forEach(h => {
+                    const spySongText = h.undercoverSong ? `<div style="font-size: 14px; color: #7a6a5d;">🎧 臥底：${escapeHtml(h.undercoverSong)}</div>` : `<div style="font-size: 13px; color: #8e7cc3;">🔇 純白板局（無臥底歌）</div>`;
                     container.innerHTML += `
                         <div class="rank-item" style="flex-direction: column; align-items: flex-start;">
                             <div style="font-size: 13px; color: #a39589; margin-bottom: 4px;">第 ${h.round} 局 (${escapeHtml(h.category)}) - 結果：<span style="color: #e07a5f;">${escapeHtml(h.winner)}</span></div>
                             <div style="font-size: 14px; color: #7a6a5d;">🎵 平民：${escapeHtml(h.civilianSong)}</div>
-                            <div style="font-size: 14px; color: #7a6a5d;">🎧 臥底：${escapeHtml(h.undercoverSong)}</div>
+                            ${spySongText}
                         </div>`;
                 });
             }
@@ -706,19 +891,29 @@
             showAlert("房主已解散房間或閒置過久！", () => { currentRoomId = null; switchView('homeScreen'); }); 
         });
 
+        socket.on('round_aborted', (msg) => {
+            clearInterval(globalTimerInterval);
+            stopAllAudio();
+            switchView('roomScreen');
+            showToast(msg || '人數不足，本局已自動中止');
+        });
+
         socket.on('room_joined', (roomId) => { currentRoomId = roomId; switchView('roomScreen'); });
 
-        // 更新大廳準備室 DOM（即使人在結算畫面也會在背景保持最新狀態）
+        // 更新準備室畫面（含皇冠與即時分數顯示）
         function updateLobbyDOM(roomState) {
+            const roleMode = roomState.settings.roleMode || '加入白板';
             document.getElementById('displayRoomId').innerText = currentRoomId;
-            document.getElementById('displaySettings').innerText = `設定：${roomState.settings.duration}秒 | ${roomState.settings.category}`;
+            document.getElementById('displaySettings').innerText = `設定：${roomState.settings.duration}秒 | ${roomState.settings.category} | ${roleMode}`;
             document.getElementById('selectDuration').value = roomState.settings.duration;
             document.getElementById('selectCategory').value = roomState.settings.category;
+            document.getElementById('selectRoleMode').value = roleMode;
 
             const listDiv = document.getElementById('playerList');
             listDiv.innerHTML = ''; 
             let allReady = true; 
             let index = 1; 
+            const maxScore = getHighestScore();
             
             const isHost = (roomState.hostId === myUserId);
             document.getElementById('leaveBtn').innerText = isHost ? '解散房間' : '退出房間';
@@ -726,6 +921,8 @@
 
             Object.keys(roomState.players).forEach(uid => {
                 const p = roomState.players[uid];
+                const score = globalScores[uid] || 0;
+                const crown = (score > 0 && score === maxScore) ? '👑 ' : '';
                 const hostText = (uid === roomState.hostId) ? '<span style="font-size: 12px; color: #cf9366; margin-left: 4px;">(房主)</span>' : '';
                 
                 let statusText = '';
@@ -744,7 +941,8 @@
                 row.innerHTML = `
                     <div class="player-info-left">
                         <span style="margin-right: 5px; flex-shrink: 0;">${index} -</span>
-                        <span class="player-name-text">${escapeHtml(p.name)}</span>
+                        <span class="player-name-text">${crown}${escapeHtml(p.name)}</span>
+                        <span class="player-score-tag">${score}分</span>
                         <div style="flex-shrink: 0;">${hostText}</div>
                     </div>
                     <div class="player-status-right">${statusText}</div>`;
@@ -763,7 +961,6 @@
                 index++;
             });
 
-            // 動態切換「準備遊戲 / 取消準備」按鈕外觀
             const readyBtn = document.getElementById('readyBtn');
             const myPlayer = roomState.players[myUserId];
             if (myPlayer && myPlayer.isReady) {
@@ -803,7 +1000,6 @@
             globalHistoryList = roomState.historyList || [];
             globalSettingsDuration = roomState.settings.duration;
 
-            // 始終在背景更新準備室 DOM，避免從結算返回時畫面過期
             updateLobbyDOM(roomState);
 
             const isResult = document.getElementById('resultScreen').style.display === 'block';
@@ -811,13 +1007,13 @@
 
             if (roomState.state === 'PLAYING') {
                 switchView('playingScreen');
-                document.getElementById('playStatusTitle').innerText = '仔細聽！';
-                document.getElementById('playStatusDesc').innerText = '觀察大家的表情與節奏，找出臥底';
+                applyPlayingTextByRole();
                 document.getElementById('downloadList').style.display = 'none';
                 document.getElementById('catWrapper').style.display = 'block';
                 document.getElementById('catLabelText').innerText = '♪ 歐寶 × 啵寶｜當前歌單：' + roomState.settings.category;
                 document.getElementById('progressContainer').style.display = 'block';
                 document.getElementById('countdownNumber').style.display = 'block';
+                document.getElementById('playReactionBar').style.display = 'grid';
                 
                 startGlobalTimer(roomState.phaseRemaining, 'countdownNumber', true);
                 return;
@@ -867,12 +1063,14 @@
 
         socket.on('game_starting', () => {
             stopAllAudio();
+            amIWhiteboard = false;
             switchView('playingScreen');
             document.getElementById('playStatusTitle').innerText = '音檔下載中...';
             document.getElementById('playStatusDesc').innerText = '請確保手機音量開啟';
             document.getElementById('catWrapper').style.display = 'none';
             document.getElementById('progressContainer').style.display = 'none';
             document.getElementById('countdownNumber').style.display = 'none';
+            document.getElementById('playReactionBar').style.display = 'none';
             
             const dlList = document.getElementById('downloadList');
             dlList.style.display = 'block';
@@ -913,18 +1111,53 @@
             audio.load();
         });
 
-        socket.on('START_PLAYING_MUSIC', () => {
+        // 💡 防露餡白板開播控制：白板瞬間切斷音源，完全無聲！
+        socket.on('START_PLAYING_MUSIC', (data) => {
+            amIWhiteboard = Boolean(data && data.isWhiteboard);
+            applyPlayingTextByRole();
             const audio = document.getElementById('bgm');
-            audio.currentTime = 0; 
-            audio.play().catch(e => console.error("播放失敗:", e));
+            if (amIWhiteboard) {
+                audio.pause();
+                audio.removeAttribute('src');
+                audio.load();
+            } else {
+                audio.currentTime = 0; 
+                audio.play().catch(e => console.error("播放失敗:", e));
+            }
         });
 
-        // 💡 即時公開亮票系統：將投票者的名字膠囊貼在被投玩家的按鈕上
+        // 💡 功能 A：發送與接收心理戰氣泡
+        function sendReaction(text) {
+            if (!currentRoomId || reactionCooldown) return;
+            reactionCooldown = true;
+            document.querySelectorAll('.btn-react').forEach(b => b.disabled = true);
+            socket.emit('send_reaction', { roomId: currentRoomId, userId: myUserId, text });
+            setTimeout(() => {
+                reactionCooldown = false;
+                document.querySelectorAll('.btn-react').forEach(b => b.disabled = false);
+            }, 1500);
+        }
+
+        socket.on('reaction_bubble', ({ senderName, text }) => {
+            const stage = document.getElementById('bubbleStage');
+            if (!stage) return;
+            while (stage.children.length >= 5) {
+                stage.removeChild(stage.firstChild);
+            }
+            const bubble = document.createElement('div');
+            bubble.className = 'floating-bubble';
+            bubble.innerText = `${senderName}：${text}`;
+            stage.appendChild(bubble);
+            setTimeout(() => {
+                if (bubble.parentNode) bubble.parentNode.removeChild(bubble);
+            }, 2400);
+        });
+
+        // 即時公開亮票系統（含被投票左右顫抖特效）
         function renderVoteGrid(players, votesMap = {}) {
             const grid = document.getElementById('voteGrid');
             grid.innerHTML = '';
 
-            // 統計每個目標目前被哪些人投
             const votersByTarget = {};
             let totalVotesCast = 0;
             for (const voterId in votesMap) {
@@ -947,10 +1180,12 @@
 
             for (const uid in players) {
                 const isSelf = (uid === myUserId);
+                const voters = votersByTarget[uid] || [];
                 const btn = document.createElement('button');
                 btn.className = 'vote-btn';
                 if (isSelf) btn.classList.add('self-btn');
                 if (myVoteTarget === uid) btn.classList.add('selected');
+                if (voters.length > 0) btn.classList.add('has-votes');
 
                 const nameDiv = document.createElement('div');
                 nameDiv.className = 'vote-target-name';
@@ -959,7 +1194,6 @@
                 const tagsWrap = document.createElement('div');
                 tagsWrap.className = 'voter-tags-wrap';
 
-                const voters = votersByTarget[uid] || [];
                 voters.forEach(v => {
                     const tag = document.createElement('span');
                     tag.className = 'voter-tag' + (v.uid === myUserId ? ' my-tag' : '');
@@ -990,14 +1224,12 @@
             socket.emit('submit_vote', { roomId: currentRoomId, userId: myUserId, targetId: myVoteTarget });
         }
 
-        // 收到任何人投票或換票時，即時重繪名條位置
         socket.on('votes_live_update', ({ votes }) => {
             globalVotes = votes || {};
             myVoteTarget = globalVotes[myUserId] || null;
             renderVoteGrid(globalPlayers, globalVotes);
         });
 
-        // 結算畫面試聽功能
         function updatePreviewButtons() {
             const civBtn = document.getElementById('previewCivBtn');
             const spyBtn = document.getElementById('previewSpyBtn');
@@ -1064,13 +1296,28 @@
                 title.style.color = '#cf9366';
             }
             
-            const spyEl = document.getElementById('resultSpy');
-            spyEl.innerText = data.undercoverName;
+            // 組合本局臥底與白板名單
+            const spyParts = [];
+            if (data.undercoverName) {
+                spyParts.push(`🕵️ 臥底：<span style="color:#e07a5f;">${escapeHtml(data.undercoverName)}</span>`);
+            }
+            if (data.whiteboardName) {
+                spyParts.push(`🔇 白板：<span style="color:#8e7cc3;">${escapeHtml(data.whiteboardName)}</span>`);
+            }
+            document.getElementById('resultSpyLine').innerHTML = spyParts.join(' ｜ ');
 
             document.getElementById('resultCivilianSong').innerText = data.civilianSong;
-            document.getElementById('resultUndercoverSong').innerText = data.undercoverSong;
             previewUrls.civ = data.civilianUrl || '';
-            previewUrls.spy = data.undercoverUrl || '';
+
+            const spySongRow = document.getElementById('spySongRow');
+            if (data.undercoverSong) {
+                spySongRow.style.display = 'flex';
+                document.getElementById('resultUndercoverSong').innerText = data.undercoverSong;
+                previewUrls.spy = data.undercoverUrl || '';
+            } else {
+                spySongRow.style.display = 'none';
+                previewUrls.spy = '';
+            }
             updatePreviewButtons();
 
             const detailContainer = document.getElementById('resultDetailList');
@@ -1081,8 +1328,15 @@
                     const row = document.createElement('div');
                     row.className = 'result-row';
 
-                    const roleClass = p.isUndercover ? 'role-spy' : 'role-civ';
-                    const roleLabel = p.isUndercover ? '🕵️ 臥底' : '👤 平民';
+                    let roleClass = 'role-civ';
+                    let roleLabel = '👤 平民';
+                    if (p.role === 'UNDERCOVER') {
+                        roleClass = 'role-spy';
+                        roleLabel = '🕵️ 臥底';
+                    } else if (p.role === 'WHITEBOARD') {
+                        roleClass = 'role-wb';
+                        roleLabel = '🔇 白板';
+                    }
 
                     let actionText = '';
                     if (p.votedForName) {
