@@ -6,100 +6,100 @@ const io = require('socket.io')(http);
 process.on('uncaughtException', (err) => { console.error('未捕獲的錯誤:', err); });
 process.on('unhandledRejection', (reason) => { console.error('未處理的 Promise 拒絕:', reason); });
 
-// 允許讀取同資料夾的圖片靜態檔案 (歐泥醬與啵嚕醬的照片)
+// 允許讀取同資料夾的靜態檔案 (歐泥醬與啵嚕醬的照片)
 app.use(express.static(__dirname));
 
 const rooms = {}; 
 
-// 💡 題庫大升級！四大類別各 100 首，總計 400 首熱門神曲
+// 💡 題庫大升級！全面剔除催眠慢歌，400 首皆為「節奏鮮明、律動感強」的派對神曲
 const POOLS = {
   '華語流行': [
-    "周杰倫 擱淺", "周杰倫 七里香", "周杰倫 晴天", "周杰倫 稻香", "周杰倫 夜曲",
-    "告五人 好不容易", "告五人 披星戴月的想你", "告五人 愛人錯過", "告五人 帶我去找夜生活", "告五人 醜人多作怪",
-    "林俊傑 那些你很冒險的夢", "林俊傑 修煉愛情", "林俊傑 不為誰而作的歌", "林俊傑 可惜沒如果", "林俊傑 江南",
-    "鄧紫棋 倒數", "鄧紫棋 光年之外", "鄧紫棋 泡沫", "鄧紫棋 來自天堂的魔鬼", "鄧紫棋 句號",
-    "韋禮安 如果可以", "韋禮安 慢慢等", "韋禮安 還是會", "韋禮安 女孩", "韋禮安 因為是你",
-    "周興哲 以後別做朋友", "周興哲 你，好不好", "周興哲 怎麼了", "周興哲 如果雨之後", "周興哲 永不失聯的愛",
-    "八三夭 想見你想見你想見你", "八三夭 東區東區", "八三夭 顛倒世界", "八三夭 我不想改變世界我只想不被世界改變", "八三夭 致青春",
-    "茄子蛋 閣愛妳一擺", "茄子蛋 浪子回頭", "茄子蛋 浪流連", "茄子蛋 愛情你比我想的閣較偉大", "茄子蛋 恰似你的溫柔",
-    "田馥甄 小幸運", "田馥甄 魔鬼中的天使", "田馥甄 寂寞寂寞就好", "田馥甄 日常", "田馥甄 無人知曉",
-    "陳奕迅 孤勇者", "陳奕迅 十年", "陳奕迅 愛情轉移", "陳奕迅 淘汰", "陳奕迅 浮誇",
-    "五月天 突然好想你", "五月天 倔強", "五月天 知足", "五月天 離開地球表面", "五月天 溫柔", 
-    "張惠妹 連名帶姓", "張惠妹 聽海", "蔡依林 倒帶", "蔡依林 玫瑰少年", "孫燕姿 天黑黑", 
-    "孫燕姿 遇見", "林宥嘉 說謊", "林宥嘉 天真有邪", "林宥嘉 兜圈", "蕭敬騰 王妃", 
-    "蕭敬騰 阿飛的小蝴蝶", "薛之謙 演員", "薛之謙 醜八怪", "盧廣仲 刻在我心底的名字", "盧廣仲 魚仔", 
-    "陳勢安 天后", "胡夏 那些年", "李榮浩 李白", "李榮浩 模特", "李榮浩 年少有為", 
-    "周杰倫 告白氣球", "周杰倫 說好不哭", "周杰倫 等你下課", "周杰倫 青花瓷", "周杰倫 楓", 
-    "林俊傑 醉赤壁", "林俊傑 背對背擁抱", "鄧紫棋 多遠都要在一起", "鄧紫棋 畫", "告五人 在這座城市遺失了你", 
-    "告五人 唯一", "飛兒樂團 我們的愛", "飛兒樂團 月牙灣", "王心凌 愛你", "王心凌 當你", 
-    "楊丞琳 雨愛", "楊丞琳 曖昧", "徐佳瑩 尋人啟事", "徐佳瑩 失落沙洲", "A-Lin 有一種悲傷", 
-    "A-Lin 給我一個理由忘記", "周興哲 其實你並沒那麼孤單", "茄子蛋 日常", "李聖傑 痴心絕對", "動力火車 當"
+    "周杰倫 本草綱目", "周杰倫 雙截棍", "周杰倫 牛仔很忙", "周杰倫 霍元甲", "周杰倫 陽光宅男",
+    "周杰倫 告白氣球", "周杰倫 稻香", "周杰倫 夜曲", "周杰倫 龍捲風", "周杰倫 公公偏頭痛",
+    "蔡依林 Play我呸", "蔡依林 大藝術家", "蔡依林 舞孃", "蔡依林 怪美的", "蔡依林 玫瑰少年",
+    "蔡依林 看我72變", "蔡依林 愛情三十六計", "蔡依林 美人計", "蔡依林 日不落", "蔡依林 特務J",
+    "五月天 離開地球表面", "五月天 派對動物", "五月天 傷心的人別聽慢歌", "五月天 戀愛ING", "五月天 倔強",
+    "五月天 終結孤單", "五月天 入陣曲", "五月天 將軍令", "五月天 乾杯", "五月天 第一天",
+    "告五人 愛人錯過", "告五人 帶我去找夜生活", "告五人 醜人多作怪", "告五人 披星戴月的想你", "告五人 法蘭西多士",
+    "八三夭 東區東區", "八三夭 想見你想見你想見你", "八三夭 顛倒世界", "八三夭 致青春", "八三夭 眉飛色舞",
+    "八三夭 來互相傷害", "八三夭 搖勒搖勒", "八三夭 馬子狗", "蕭敬騰 王妃", "蕭敬騰 阿飛的小蝴蝶",
+    "鄧紫棋 光年之外", "鄧紫棋 來自天堂的魔鬼", "鄧紫棋 倒數", "鄧紫棋 句號", "鄧紫棋 摩天動物園",
+    "林俊傑 不潮不用花錢", "林俊傑 曹操", "林俊傑 因你而在", "林俊傑 江南", "林俊傑 那些你很冒險的夢",
+    "張惠妹 三天三夜", "張惠妹 好膽你就來", "張惠妹 火", "羅志祥 精舞門", "羅志祥 愛投羅網",
+    "王心凌 愛你", "王心凌 Honey", "王心凌 睫毛彎彎", "王心凌 心電心", "謝金燕 姐姐",
+    "玖壹壹 打鐵", "玖壹壹 來個蹦蹦", "玖壹壹 鄉下來的", "玖壹壹 9453", "玖壹壹 癡情男子漢",
+    "兄弟本色 Fly Out", "頑童MJ116 辣台妹", "頑童MJ116 幹大事", "MC HotDog 我愛台妹", "周湯豪 帥到分手",
+    "周湯豪 TURN UP", "潘瑋柏 不得不愛", "潘瑋柏 快樂崇拜", "潘瑋柏 壁虎漫步", "Energy 星期五晚上",
+    "MP魔幻力量 射手", "MP魔幻力量 戰神", "飛兒樂團 我們的愛", "飛兒樂團 月牙灣", "飛兒樂團 Lydia",
+    "蘇打綠 小情歌", "蘇打綠 控制狂", "盧廣仲 魚仔", "盧廣仲 早安晨之美", "韋禮安 如果可以",
+    "韋禮安 女孩", "李榮浩 李白", "陳奕迅 孤勇者", "陳奕迅 浮誇", "動力火車 當",
+    "動力火車 忠孝東路走九遍", "茄子蛋 浪子回頭", "茄子蛋 愛情你比我想的閣較偉大", "大支 台灣Song", "草蜢 失戀陣線聯盟"
   ],
   'K-POP': [
     "BLACKPINK How You Like That", "BLACKPINK Kill This Love", "BLACKPINK DDU-DU DDU-DU", "BLACKPINK Pink Venom", "BLACKPINK Shut Down",
-    "BTS Butter", "BTS Dynamite", "BTS Boy With Luv", "BTS Fake Love", "BTS Blood Sweat & Tears",
+    "BLACKPINK As If It's Your Last", "BLACKPINK BOOMBAYAH", "BLACKPINK Playing With Fire", "JENNIE SOLO", "ROSE APT.",
+    "BTS Butter", "BTS Dynamite", "BTS Boy With Luv", "BTS FIRE", "BTS DNA",
+    "BTS IDOL", "BTS Fake Love", "BTS Blood Sweat & Tears", "BTS Mic Drop", "Jungkook Seven",
     "TWICE FANCY", "TWICE Feel Special", "TWICE The Feels", "TWICE TT", "TWICE What Is Love",
-    "NewJeans Hype Boy", "NewJeans OMG", "NewJeans Ditto", "NewJeans Super Shy", "NewJeans Attention",
-    "aespa Next Level", "aespa Savage", "aespa Drama", "aespa Spicy", "aespa Illusion",
-    "IVE I AM", "IVE LOVE DIVE", "IVE After LIKE", "IVE ELEVEN", "IVE Baddie",
+    "TWICE CHEER UP", "TWICE YES or YES", "TWICE Dance The Night Away", "TWICE LIKEY", "TWICE Talk that Talk",
+    "NewJeans Hype Boy", "NewJeans OMG", "NewJeans Super Shy", "NewJeans Attention", "NewJeans ETA",
+    "aespa Next Level", "aespa Savage", "aespa Drama", "aespa Spicy", "aespa Supernova",
+    "aespa Armageddon", "aespa Illusion", "aespa Black Mamba", "IVE I AM", "IVE LOVE DIVE",
+    "IVE After LIKE", "IVE ELEVEN", "IVE Baddie", "IVE Kitsch", "IVE HEYA",
     "LE SSERAFIM UNFORGIVEN", "LE SSERAFIM ANTIFRAGILE", "LE SSERAFIM FEARLESS", "LE SSERAFIM Perfect Night", "LE SSERAFIM Eve Psyche",
-    "(G)I-DLE Nxde", "(G)I-DLE TOMBOY", "(G)I-DLE Queencard", "(G)I-DLE LATATA", "(G)I-DLE Super Lady",
-    "SEVENTEEN Super", "SEVENTEEN HOT", "SEVENTEEN Don't Wanna Cry", "SEVENTEEN VERY NICE", "SEVENTEEN Clap",
-    "Stray Kids God's Menu", "Stray Kids MANIAC", "Stray Kids S-Class", "ITZY WANNABE", "Jungkook Seven",
-    "BIGBANG BANG BANG BANG", "BIGBANG FANTASTIC BABY", "BIGBANG LOSER", "EXO Love Shot", "EXO Growl", 
-    "Red Velvet Psycho", "Red Velvet Bad Boy", "Red Velvet Peek-A-Boo", "ITZY DALLA DALLA", "ITZY LOCO", 
-    "TXT Sugar Rush Ride", "TXT Blue Hour", "ENHYPEN Drunk-Dazed", "ENHYPEN Bite Me", "NMIXX DASH", 
-    "NMIXX O.O", "BABYMONSTER SHEESH", "BABYMONSTER BATTER UP", "ILLIT Magnetic", "MAMAMOO HIP", 
-    "MAMAMOO Starry Night", "GFRIEND Me Gustas Tu", "GFRIEND Rough", "IZ*ONE FIESTA", "IZ*ONE Secret Story of the Swan", 
-    "STAYC ASAP", "STAYC RUN2U", "BLACKPINK As If It's Your Last", "BLACKPINK BOOMBAYAH", "BLACKPINK Playing With Fire", 
-    "BTS FIRE", "BTS DNA", "BTS IDOL", "BTS Spring Day", "TWICE CHEER UP", 
-    "TWICE YES or YES", "TWICE Dance The Night Away", "NewJeans ETA", "NewJeans Cookie", "aespa Girls", 
-    "aespa Supernova", "aespa Armageddon", "IVE Kitsch", "LE SSERAFIM EASY", "LE SSERAFIM SMART", 
-    "(G)I-DLE HWAA", "(G)I-DLE Oh my god", "SEVENTEEN Left & Right", "Stray Kids Thunderous", "NCT DREAM Hot Sauce"
+    "LE SSERAFIM EASY", "LE SSERAFIM SMART", "LE SSERAFIM CRAZY", "(G)I-DLE Nxde", "(G)I-DLE TOMBOY",
+    "(G)I-DLE Queencard", "(G)I-DLE LATATA", "(G)I-DLE Super Lady", "(G)I-DLE Klaxon", "(G)I-DLE MY BAG",
+    "SEVENTEEN Super", "SEVENTEEN HOT", "SEVENTEEN VERY NICE", "SEVENTEEN Clap", "SEVENTEEN Left & Right",
+    "SEVENTEEN God of Music", "BSS Fighting", "Stray Kids God's Menu", "Stray Kids MANIAC", "Stray Kids S-Class",
+    "Stray Kids Thunderous", "Stray Kids Chk Chk Boom", "ITZY WANNABE", "ITZY DALLA DALLA", "ITZY LOCO",
+    "ITZY Sneakers", "BIGBANG BANG BANG BANG", "BIGBANG FANTASTIC BABY", "EXO Love Shot", "EXO Growl",
+    "Red Velvet Psycho", "Red Velvet Peek-A-Boo", "Red Velvet Russian Roulette", "TXT Sugar Rush Ride", "ENHYPEN Bite Me",
+    "NMIXX DASH", "BABYMONSTER SHEESH", "ILLIT Magnetic", "MAMAMOO HIP", "GFRIEND Me Gustas Tu",
+    "IZ*ONE FIESTA", "STAYC ASAP", "PSY Gangnam Style", "PSY That That", "Super Junior Sorry Sorry"
   ],
   '動漫神曲': [
     "YOASOBI アイドル", "YOASOBI 夜に駆ける", "YOASOBI 怪物", "YOASOBI 祝福", "YOASOBI 群青",
-    "LiSA 紅蓮華", "LiSA 炎", "LiSA crossing field", "LiSA oath sign", "LiSA Catch the Moment",
-    "Aimer 残響散歌", "Aimer Brave Shine", "Aimer I beg you", "Aimer RE:I AM", "Aimer ninelie",
-    "米津玄師 KICK BACK", "米津玄師 Lemon", "米津玄師 ピースサイン", "米津玄師 Orion", "米津玄師 LOSER",
-    "RADWIMPS 前前前世", "RADWIMPS スパークル", "RADWIMPS なんでもないや", "RADWIMPS グランドエスケープ", "RADWIMPS 愛にできることはまだあるかい",
-    "King Gnu SPECIALZ", "King Gnu 白日", "King Gnu 逆夢", "King Gnu 一途", "King Gnu BOY",
-    "Official髭男dism ミックスナッツ", "Official髭男dism Cry Baby", "Official髭男dism Pretender", "Official髭男dism 宿命", "Official髭男dism イエスタデイ",
-    "キタニタツヤ 青のすみか", "Vaundy CHAINSAW BLOOD", "Creepy Nuts Bling-Bang-Bang-Born", "TK from 凛として時雨 unravel", "FLOW GO!!!",
-    "SPYAIR サクラミツツキ", "SPYAIR イマジネーション", "藍井エイル IGNITE", "藍井エイル INNOCENCE", "藍井エイル シリウス",
-    "KANA-BOON シルエット", "いきものがかり ブルーバード", "YUI again", "高橋洋子 残酷な天使のテーゼ", "和田光司 Butter-Fly",
-    "YOASOBI 勇者", "YOASOBI たぶん", "LiSA シルシ", "LiSA だってアタシのヒーロー。", "Aimer 蝶々結び", 
-    "Aimer カタオモイ", "米津玄師 M八七", "米津玄師 地球儀", "米津玄師 打上花火", "RADWIMPS 夢灯籠", 
-    "RADWIMPS 祝祭", "King Gnu 飛行艇", "King Gnu カメレオン", "Official髭男dism ホワイトノイズ", "Official髭男dism 115万キロのフィルム", 
-    "ヨルシカ ただ君に晴れ", "ヨルシカ だから僕は音楽を辞めた", "ヨルシカ 春泥棒", "ずっと真夜中でいいのに。 秒針を噛む", "ずっと真夜中でいいのに。 勘冴えて悔しいわ", 
-    "Ado うっせぇわ", "Ado 新時代", "Ado 唱", "Ado 踊", "Eve 廻廻奇譚", 
-    "Eve ドラマツルギー", "Eve ナンセンス文学", "星野源 喜劇", "星野源 恋", "yama 春を告げる", 
-    "優里 ドライフラワー", "優里 ベテルギウス", "Vaundy 怪獣の花唄", "Vaundy 踊り子", "マカロニえんぴつ なんでもないよ、", 
-    "Saucy Dog シンデレラボーイ", "Mrs. GREEN APPLE インフェルノ", "Mrs. GREEN APPLE ダンスホール", "Mrs. GREEN APPLE 青と夏", "BUMP OF CHICKEN 天体観測", 
-    "BUMP OF CHICKEN アカシア", "UNISON SQUARE GARDEN シュガーソングとビターステップ", "DOES 曇天", "DOES 修羅", "UVERworld 核心", 
-    "UVERworld Touch off", "ポルノグラフィティ メリッサ", "ポルノグラフィティ サウダージ", "スキマスイッチ 奏(かなで)", "supercell 君の知らない物語"
+    "YOASOBI 勇者", "LiSA 紅蓮華", "LiSA crossing field", "LiSA oath sign", "LiSA Catch the Moment",
+    "LiSA Rising Hope", "LiSA だってアタシのヒーロー。", "Aimer 残響散歌", "Aimer Brave Shine", "Aimer SPARK-AGAIN",
+    "米津玄師 KICK BACK", "米津玄師 ピースサイン", "米津玄師 LOSER", "米津玄師 感電", "米津玄師 ドーナツホール",
+    "RADWIMPS 前前前世", "RADWIMPS 夢灯籠", "RADWIMPS 祝祭", "King Gnu SPECIALZ", "King Gnu 一途",
+    "King Gnu 白日", "King Gnu BOY", "King Gnu 飛行艇", "Official髭男dism ミックスナッツ", "Official髭男dism Cry Baby",
+    "Official髭男dism Pretender", "Official髭男dism 宿命", "Official髭男dism ホワイトノイズ", "Official髭男dism イエスタデイ", "キタニタツヤ 青のすみか",
+    "Vaundy CHAINSAW BLOOD", "Vaundy 怪獣の花唄", "Vaundy 踊り子", "Creepy Nuts Bling-Bang-Bang-Born", "Creepy Nuts オトノケ",
+    "TK from 凛として時雨 unravel", "FLOW GO!!!", "FLOW Sign", "FLOW COLORS", "SPYAIR サクラミツツキ",
+    "SPYAIR イマジネーション", "SPYAIR サムライハート", "藍井エイル IGNITE", "藍井エイル INNOCENCE", "藍井エイル シリウス",
+    "KANA-BOON シルエット", "いきものがかり ブルーバード", "YUI again", "YUI Rolling star", "高橋洋子 残酷な天使のテーゼ",
+    "和田光司 Butter-Fly", "ヨルシカ ただ君に晴れ", "ヨルシカ だから僕は音楽を辞めた", "ヨルシカ 春泥棒", "ずっと真夜中でいいのに。 秒針を噛む",
+    "ずっと真夜中でいいのに。 勘冴えて悔しいわ", "ずっと真夜中でいいのに。 残機", "Ado うっせぇわ", "Ado 新時代", "Ado 唱",
+    "Ado 踊", "Ado 逆光", "Eve 廻廻奇譚", "Eve ドラマツルギー", "Eve ナンセンス文学",
+    "Eve ファイトソング", "星野源 恋", "星野源 喜劇", "yama 春を告げる", "優里 ベテルギウス",
+    "Mrs. GREEN APPLE インフェルノ", "Mrs. GREEN APPLE ダンスホール", "Mrs. GREEN APPLE 青と夏", "Mrs. GREEN APPLE ライラック", "BUMP OF CHICKEN 天体観測",
+    "BUMP OF CHICKEN アカシア", "UNISON SQUARE GARDEN シュガーソングとビターステップ", "DOES 曇天", "DOES 修羅", "UVERworld Touch off",
+    "UVERworld CORE PRIDE", "ポルノグラフィティ メリッサ", "ポルノグラフィティ アゲハ蝶", "supercell 君の知らない物語", "fripSide only my railgun",
+    "ClariS コネクト", "ClariS ヒトリゴト", "鈴木雅之 DADDY! DADDY! DO!", "オーイシマサヨシ 君じゃなきゃダメみたい", "大石昌良 ようこそジャパリパークへ",
+    "MAN WITH A MISSION Raise your flag", "MAN WITH A MISSION 絆ノ奇跡", "Fear, and Loathing in Las Vegas Just Awake", "ASIAN KUNG-FU GENERATION リライト", "Linked Horizon 紅蓮の弓矢"
   ],
   '流行英語': [
     "Taylor Swift Cruel Summer", "Taylor Swift Anti-Hero", "Taylor Swift Blank Space", "Taylor Swift Shake It Off", "Taylor Swift Love Story",
-    "Ed Sheeran Shape of You", "Ed Sheeran Perfect", "Ed Sheeran Bad Habits", "Ed Sheeran Thinking Out Loud", "Ed Sheeran Photograph",
-    "Bruno Mars Uptown Funk", "Bruno Mars That's What I Like", "Bruno Mars Just the Way You Are", "Bruno Mars Locked Out of Heaven", "Bruno Mars 24K Magic",
-    "Adele Rolling in the Deep", "Adele Someone Like You", "Adele Hello", "Adele Easy On Me", "Adele Set Fire to the Rain",
-    "Coldplay Viva La Vida", "Coldplay Yellow", "Coldplay Something Just Like This", "Coldplay A Sky Full of Stars", "Coldplay Fix You",
+    "Taylor Swift You Belong With Me", "Taylor Swift I Knew You Were Trouble", "Taylor Swift Bad Blood", "Taylor Swift 22", "Taylor Swift Style",
+    "Ed Sheeran Shape of You", "Ed Sheeran Bad Habits", "Ed Sheeran Shivers", "Ed Sheeran Galway Girl", "Ed Sheeran Sing",
+    "Bruno Mars Uptown Funk", "Bruno Mars That's What I Like", "Bruno Mars Locked Out of Heaven", "Bruno Mars 24K Magic", "Bruno Mars Treasure",
+    "Bruno Mars Runaway Baby", "Bruno Mars Finesse", "Adele Rolling in the Deep", "Adele Set Fire to the Rain", "Adele Send My Love",
+    "Coldplay Viva La Vida", "Coldplay Something Just Like This", "Coldplay A Sky Full of Stars", "Coldplay Adventure of a Lifetime", "Coldplay Hymn for the Weekend",
     "Dua Lipa Don't Start Now", "Dua Lipa Levitating", "Dua Lipa Dance The Night", "Dua Lipa New Rules", "Dua Lipa Physical",
-    "Justin Bieber Peaches", "Justin Bieber Sorry", "Justin Bieber Love Yourself", "Justin Bieber Baby", "Justin Bieber Ghost",
-    "The Weeknd Blinding Lights", "The Weeknd Starboy", "The Weeknd Save Your Tears", "The Weeknd The Hills", "The Weeknd Can't Feel My Face",
-    "Harry Styles As It Was", "Harry Styles Watermelon Sugar", "Harry Styles Sign of the Times", "Harry Styles Adore You", "Harry Styles Late Night Talking",
-    "Billie Eilish bad guy", "Billie Eilish everything i wanted", "Billie Eilish Therefore I Am", "Billie Eilish ocean eyes", "Billie Eilish happier than ever",
-    "Taylor Swift You Belong With Me", "Taylor Swift I Knew You Were Trouble", "Taylor Swift We Are Never Ever Getting Back Together", "Ed Sheeran Galway Girl", "Ed Sheeran Shivers", 
-    "Bruno Mars Grenade", "Bruno Mars Treasure", "Adele Water Under the Bridge", "Adele Make You Feel My Love", "Coldplay Paradise", 
-    "Coldplay The Scientist", "Dua Lipa IDGAF", "Dua Lipa One Kiss", "Justin Bieber Intentions", "Justin Bieber Yummy", 
-    "The Weeknd Die For You", "The Weeknd Earned It", "Harry Styles Falling", "Harry Styles Golden", "Billie Eilish when the party's over", 
-    "Billie Eilish lovely", "Ariana Grande 7 rings", "Ariana Grande thank u, next", "Ariana Grande positions", "Ariana Grande Into You", 
-    "Olivia Rodrigo drivers license", "Olivia Rodrigo good 4 u", "Olivia Rodrigo vampire", "Shawn Mendes Senorita", "Shawn Mendes Treat You Better", 
-    "Shawn Mendes Stitches", "Charlie Puth Attention", "Charlie Puth We Don't Talk Anymore", "Charlie Puth Light Switch", "Maroon 5 Sugar", 
-    "Maroon 5 Payphone", "Maroon 5 Girls Like You", "Imagine Dragons Believer", "Imagine Dragons Radioactive", "Imagine Dragons Demons", 
-    "Post Malone Circles", "Post Malone Sunflower", "Katy Perry Roar", "Katy Perry Dark Horse", "Katy Perry Firework", 
-    "Lady Gaga Bad Romance", "Lady Gaga Poker Face", "Lady Gaga Shallow", "Sam Smith Stay With Me", "Sam Smith Unholy"
+    "Dua Lipa One Kiss", "Dua Lipa Break My Heart", "Justin Bieber Peaches", "Justin Bieber Sorry", "Justin Bieber Baby",
+    "Justin Bieber What Do You Mean", "Justin Bieber Beauty and a Beat", "The Kid LAROI STAY", "The Weeknd Blinding Lights", "The Weeknd Starboy",
+    "The Weeknd Save Your Tears", "The Weeknd Can't Feel My Face", "The Weeknd I Feel It Coming", "Harry Styles As It Was", "Harry Styles Watermelon Sugar",
+    "Harry Styles Adore You", "Harry Styles Late Night Talking", "One Direction What Makes You Beautiful", "Billie Eilish bad guy", "Billie Eilish Therefore I Am",
+    "Billie Eilish LUNCH", "Ariana Grande 7 rings", "Ariana Grande thank u, next", "Ariana Grande Into You", "Ariana Grande Problem",
+    "Ariana Grande Side to Side", "Ariana Grande Break Free", "Olivia Rodrigo good 4 u", "Olivia Rodrigo vampire", "Olivia Rodrigo bad idea right?",
+    "Shawn Mendes Senorita", "Shawn Mendes Treat You Better", "Shawn Mendes Stitches", "Shawn Mendes There's Nothing Holdin' Me Back", "Charlie Puth Attention",
+    "Charlie Puth Light Switch", "Charlie Puth How Long", "Maroon 5 Sugar", "Maroon 5 Payphone", "Maroon 5 Moves Like Jagger",
+    "Maroon 5 Animals", "Maroon 5 Maps", "Imagine Dragons Believer", "Imagine Dragons Radioactive", "Imagine Dragons Thunder",
+    "Imagine Dragons Bones", "Imagine Dragons Natural", "Post Malone Sunflower", "Post Malone Circles", "Katy Perry Roar",
+    "Katy Perry Dark Horse", "Katy Perry Firework", "Katy Perry California Gurls", "Katy Perry Hot N Cold", "Lady Gaga Bad Romance",
+    "Lady Gaga Poker Face", "Lady Gaga Just Dance", "Lady Gaga Rain On Me", "Sam Smith Unholy", "Avicii Wake Me Up",
+    "Calvin Harris Summer", "The Chainsmokers Closer", "Alan Walker Faded", "LMFAO Party Rock Anthem", "Carly Rae Jepsen Call Me Maybe"
   ]
 };
 
@@ -115,6 +115,58 @@ async function fetchAppleMusicPreview(keyword) {
   }
 }
 
+// 取得歌手名稱（空白鍵前半部），防止平民跟臥底抽到同一個歌手
+function getArtistName(songQuery) {
+  return String(songQuery || '').trim().split(/\s+/)[0];
+}
+
+// 💡 智慧抽歌與自動重試機制（防抓歌失敗、防同歌手）
+async function pickTwoValidSongs(availablePool) {
+  const shuffled = [...availablePool].sort(() => 0.5 - Math.random());
+  let firstSong = null;
+  let secondSong = null;
+
+  for (let i = 0; i < shuffled.length && i < 12; i++) {
+    const candidate = shuffled[i];
+    if (!firstSong) {
+      const url = await fetchAppleMusicPreview(candidate);
+      if (url) {
+        firstSong = { query: candidate, url, artist: getArtistName(candidate) };
+      }
+    } else if (!secondSong) {
+      // 強制不同歌手，避免曲風與聲音太過相近
+      if (getArtistName(candidate) === firstSong.artist) continue;
+      const url = await fetchAppleMusicPreview(candidate);
+      if (url) {
+        secondSong = { query: candidate, url, artist: getArtistName(candidate) };
+        break;
+      }
+    }
+  }
+  return (firstSong && secondSong) ? [firstSong, secondSong] : null;
+}
+
+// 💡 撞名自動編號防呆（預設：飛天巴庫）
+function getUniquePlayerName(room, rawName, currentUserId) {
+  let baseName = String(rawName || '').trim();
+  if (!baseName) baseName = '飛天巴庫';
+
+  const existingNames = new Set();
+  for (const uid in room.players) {
+    if (uid !== currentUserId) {
+      existingNames.add(room.players[uid].name);
+    }
+  }
+
+  if (!existingNames.has(baseName)) return baseName;
+
+  let counter = 2;
+  while (existingNames.has(`${baseName} ${counter}`)) {
+    counter++;
+  }
+  return `${baseName} ${counter}`;
+}
+
 app.get('/', (req, res) => { res.sendFile(__dirname + '/index.html'); });
 
 function broadcastRoomState(roomId) {
@@ -126,6 +178,7 @@ function broadcastRoomState(roomId) {
   delete safeRoom.votingTimeout;
   delete safeRoom.globalLoadingTimeout;
   delete safeRoom.singlePlayerIdleTimer;
+  delete safeRoom.roundPlayers;
   
   if (room.phaseEndTime) {
     safeRoom.phaseRemaining = Math.max(0, room.phaseEndTime - Date.now());
@@ -169,6 +222,13 @@ function removePlayer(roomId, userId, kickMsg = null) {
   delete room.scores[userId];
   delete room.votes[userId];
 
+  // 清除其他人投給該名已離開玩家的票
+  for (const voter in room.votes) {
+    if (room.votes[voter] === userId) {
+      delete room.votes[voter];
+    }
+  }
+
   const remaining = Object.keys(room.players);
   if (remaining.length === 0) {
     if (room.singlePlayerIdleTimer) clearTimeout(room.singlePlayerIdleTimer);
@@ -180,6 +240,7 @@ function removePlayer(roomId, userId, kickMsg = null) {
     if (room.hostId === userId) {
       room.hostId = remaining[0]; 
     }
+    if (room.state === 'LOADING') checkDownloadProgress(roomId);
     broadcastRoomState(roomId);
     resetSinglePlayerIdleTimer(roomId);
   }
@@ -214,6 +275,34 @@ function handlePlayerOnline(roomId, userId, socketId) {
   return true;
 }
 
+function startPlayingPhase(roomId) {
+  const room = rooms[roomId];
+  if (!room || room.state !== 'LOADING') return;
+
+  if (room.globalLoadingTimeout) {
+    clearTimeout(room.globalLoadingTimeout);
+    room.globalLoadingTimeout = null;
+  }
+  
+  room.state = 'PLAYING';
+  room.phaseEndTime = Date.now() + (room.settings.duration * 1000); 
+  broadcastRoomState(roomId);
+  io.to(roomId).emit('START_PLAYING_MUSIC');
+  
+  room.playTimeout = setTimeout(() => {
+    if (rooms[roomId]) {
+      rooms[roomId].state = 'VOTING';
+      rooms[roomId].phaseEndTime = Date.now() + 20000;
+      broadcastRoomState(roomId);
+      
+      // 完整 20 秒投票時間，不提早結束，讓玩家自由換票心理戰
+      rooms[roomId].votingTimeout = setTimeout(() => {
+        calculateVotes(roomId);
+      }, 20000); 
+    }
+  }, room.settings.duration * 1000);
+}
+
 function checkDownloadProgress(roomId) {
   const room = rooms[roomId];
   if (!room || room.state !== 'LOADING') return;
@@ -222,30 +311,12 @@ function checkDownloadProgress(roomId) {
   if (playerIds.length === 0) return;
 
   const allLoaded = playerIds.every(uid => room.players[uid].isLoaded);
-  
   if (allLoaded) {
-    if (room.globalLoadingTimeout) clearTimeout(room.globalLoadingTimeout);
-    
-    room.state = 'PLAYING';
-    room.phaseEndTime = Date.now() + (room.settings.duration * 1000); 
-    broadcastRoomState(roomId);
-    io.to(roomId).emit('START_PLAYING_MUSIC');
-    
-    room.playTimeout = setTimeout(() => {
-      if(rooms[roomId]) {
-        rooms[roomId].state = 'VOTING';
-        room.isVotingLocked = false;
-        room.phaseEndTime = Date.now() + 20000;
-        broadcastRoomState(roomId);
-        
-        rooms[roomId].votingTimeout = setTimeout(() => {
-          calculateVotes(roomId);
-        }, 20000); 
-      }
-    }, room.settings.duration * 1000);
+    startPlayingPhase(roomId);
   }
 }
 
+// 💡 全新個人戰計分與明細結算邏輯
 function calculateVotes(roomId) {
   try {
     const room = rooms[roomId];
@@ -255,67 +326,94 @@ function calculateVotes(roomId) {
     if (room.votingTimeout) clearTimeout(room.votingTimeout);
 
     room.state = 'LOBBY';
-    room.isVotingLocked = false;
     room.phaseEndTime = null;
 
-    let voteCounts = {};
-    for (let voter in room.votes) {
-      let target = room.votes[voter];
-      if (room.players[target]) { 
-        voteCounts[target] = (voteCounts[target] || 0) + 1;
+    // 使用開局時的玩家快照（加上目前房內玩家），確保中途有人斷線也不會報錯
+    const participantIds = Object.keys(room.roundPlayers || room.players);
+
+    // 統計每個人被投了幾票
+    const votesReceived = {};
+    participantIds.forEach(uid => { votesReceived[uid] = 0; });
+
+    for (const voterId in room.votes) {
+      const targetId = room.votes[voterId];
+      if (targetId && targetId !== voterId && votesReceived[targetId] !== undefined) {
+        votesReceived[targetId]++;
       }
     }
 
-    let maxVotes = 0;
-    let eliminated = [];
-    for (let target in voteCounts) {
-      if (voteCounts[target] > maxVotes) {
-        maxVotes = voteCounts[target];
-        eliminated = [target];
-      } else if (voteCounts[target] === maxVotes) {
-        eliminated.push(target); 
+    // 判斷臥底生死狀態（得票 == 0 為潛伏成功，>= 1 為被識破）
+    let survivingSpyCount = 0;
+    let caughtSpyCount = 0;
+    room.undercoverIds.forEach(spyId => {
+      if ((votesReceived[spyId] || 0) === 0) {
+        survivingSpyCount++;
+      } else {
+        caughtSpyCount++;
       }
-    }
-
-    if (maxVotes === 0) eliminated = [];
-
-    // 全新雙臥底與勝負判斷邏輯
-    const deadUndercovers = room.undercoverIds.filter(id => eliminated.includes(id));
-    const survivingUndercovers = room.undercoverIds.filter(id => !eliminated.includes(id));
-    const civilians = Object.keys(room.players).filter(id => !room.undercoverIds.includes(id));
+    });
 
     let winnerText = '';
-
-    if (room.undercoverIds.length === 1) {
-      // 單臥底局
-      if (deadUndercovers.length > 0) {
-        winnerText = '平民勝利';
-        civilians.forEach(uid => room.scores[uid] = (room.scores[uid] || 0) + 1);
-      } else {
-        winnerText = '臥底勝利';
-        room.scores[room.undercoverIds[0]] = (room.scores[room.undercoverIds[0]] || 0) + 3;
-      }
+    if (caughtSpyCount === 0) {
+      winnerText = '🔥 臥底完美潛伏！';
+    } else if (survivingSpyCount === 0) {
+      winnerText = '🎯 臥底遭到識破！';
     } else {
-      // 多人局 (雙臥底)
-      if (deadUndercovers.length === 0) {
-        winnerText = '雙臥底大獲全勝'; // 臥底都沒被抓
-        room.undercoverIds.forEach(uid => room.scores[uid] = (room.scores[uid] || 0) + 3);
-      } else if (deadUndercovers.length === 1) {
-        winnerText = '平民與倖存臥底獲勝'; // 抓到一個臥底，另一個臥底背叛隊友一起贏
-        civilians.forEach(uid => room.scores[uid] = (room.scores[uid] || 0) + 1);
-        survivingUndercovers.forEach(uid => room.scores[uid] = (room.scores[uid] || 0) + 1);
-      } else if (deadUndercovers.length === 2) {
-        winnerText = '平民完全勝利'; // 兩個臥底同時被抓出 (完美局)
-        civilians.forEach(uid => room.scores[uid] = (room.scores[uid] || 0) + 2); // 完美抓出雙臥底給 2 分獎勵
-      }
+      winnerText = '⚡ 一潛伏、一被識破！';
     }
 
-    const eliminatedData = eliminated.map(id => ({
-      name: room.players[id]?.name || '未知',
-      isUndercover: room.undercoverIds.includes(id)
-    }));
-    
-    const undercoverNames = room.undercoverIds.map(id => room.players[id]?.name || '未知').join('、');
+    // 計算每位玩家的個人得分與結算明細
+    const playerResults = [];
+    participantIds.forEach(uid => {
+      const pInfo = (room.roundPlayers && room.roundPlayers[uid]) || room.players[uid] || { name: '未知玩家' };
+      const isUndercover = room.undercoverIds.includes(uid);
+      const targetId = room.votes[uid] || null;
+      const targetInfo = targetId ? ((room.roundPlayers && room.roundPlayers[targetId]) || room.players[targetId]) : null;
+      const votedForName = targetInfo ? targetInfo.name : null;
+
+      let earnedScore = 0;
+      const notes = [];
+
+      // 規則 1：臥底 0 票完美潛伏得 2 分；被投 1 票以上潛伏失敗 (0分)
+      if (isUndercover) {
+        const myVotes = votesReceived[uid] || 0;
+        if (myVotes === 0) {
+          earnedScore += 2;
+          notes.push('0票潛伏+2');
+        } else {
+          notes.push(`被投${myVotes}票`);
+        }
+      }
+
+      // 規則 2：任何人（平民或另一位臥底）投中臥底皆得 1 分
+      if (targetId && targetId !== uid && room.undercoverIds.includes(targetId)) {
+        earnedScore += 1;
+        notes.push('抓中臥底+1');
+      }
+
+      if (room.scores[uid] !== undefined) {
+        room.scores[uid] += earnedScore;
+      }
+
+      playerResults.push({
+        uid,
+        name: pInfo.name,
+        isUndercover,
+        votedForName,
+        earnedScore,
+        note: notes.join('、')
+      });
+    });
+
+    // 排序結算明細：臥底排最上面，接著依本局得分高到低排列
+    playerResults.sort((a, b) => {
+      if (a.isUndercover !== b.isUndercover) return a.isUndercover ? -1 : 1;
+      return b.earnedScore - a.earnedScore;
+    });
+
+    const undercoverNames = room.undercoverIds
+      .map(id => ((room.roundPlayers && room.roundPlayers[id]) || room.players[id])?.name || '未知')
+      .join('、');
 
     if (!room.historyList) room.historyList = [];
     room.historyList.push({
@@ -326,7 +424,15 @@ function calculateVotes(roomId) {
       winner: winnerText
     });
 
-    const resultData = { winner: winnerText, eliminatedData, undercoverName: undercoverNames, civilianSong: room.civilianSong, undercoverSong: room.undercoverSong };
+    const resultData = {
+      winner: winnerText,
+      undercoverName: undercoverNames,
+      civilianSong: room.civilianSong,
+      undercoverSong: room.undercoverSong,
+      civilianUrl: room.civilianUrl,
+      undercoverUrl: room.undercoverUrl,
+      playerResults
+    };
     room.lastResult = resultData;
 
     io.to(roomId).emit('GAME_RESULT', resultData);
@@ -341,18 +447,21 @@ function calculateVotes(roomId) {
 
 io.on('connection', (socket) => {
   socket.on('create_room', ({ userId, userName }) => {
-    const finalName = userName || '天飛巴庫';
     const roomId = Math.floor(1000 + Math.random() * 9000).toString(); 
 
     rooms[roomId] = { 
       hostId: userId, state: 'LOBBY', players: {},
       settings: { duration: 15, category: '全部' }, 
-      undercoverIds: [], votes: {}, isVotingLocked: false,
+      undercoverIds: [], votes: {},
       civilianSong: '', undercoverSong: '',
+      civilianUrl: '', undercoverUrl: '',
       playedSongs: [], scores: {}, lastResult: null, historyList: [],
+      roundPlayers: {},
       phaseEndTime: null, playTimeout: null, votingTimeout: null, globalLoadingTimeout: null,
       singlePlayerIdleTimer: null
     };
+
+    const finalName = getUniquePlayerName(rooms[roomId], userName, userId);
     rooms[roomId].players[userId] = { name: finalName, socketId: socket.id, status: 'ONLINE', isReady: false, isLoaded: false };
     rooms[roomId].scores[userId] = 0; 
 
@@ -370,7 +479,8 @@ io.on('connection', (socket) => {
       handlePlayerOnline(roomId, userId, socket.id);
     } else {
       if (room.state !== 'LOBBY') return socket.emit('error_msg', '遊戲正在進行中，無法加入！');
-      room.players[userId] = { name: userName || '天飛巴庫', socketId: socket.id, status: 'ONLINE', isReady: false, isLoaded: false };
+      const finalName = getUniquePlayerName(room, userName, userId);
+      room.players[userId] = { name: finalName, socketId: socket.id, status: 'ONLINE', isReady: false, isLoaded: false };
       if (room.scores[userId] === undefined) room.scores[userId] = 0; 
     }
     socket.join(roomId);
@@ -411,6 +521,16 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('reset_scores', ({ roomId, userId }) => {
+    const room = rooms[roomId];
+    if (room && room.hostId === userId) {
+      Object.keys(room.scores).forEach(uid => {
+        room.scores[uid] = 0;
+      });
+      broadcastRoomState(roomId);
+    }
+  });
+
   socket.on('update_settings', ({ roomId, userId, settings }) => {
     const room = rooms[roomId];
     if (room && room.hostId === userId) {
@@ -439,74 +559,78 @@ io.on('connection', (socket) => {
 
   socket.on('start_game', async ({ roomId, userId }) => {
     const room = rooms[roomId];
-    if (room && room.hostId === userId) {
-      room.state = 'LOADING';
-      room.votes = {}; 
-      room.isVotingLocked = false;
-      if (room.singlePlayerIdleTimer) { clearTimeout(room.singlePlayerIdleTimer); room.singlePlayerIdleTimer = null; }
-      io.to(roomId).emit('game_starting');
+    // 💡 防連點防呆：嚴格限制只有 LOBBY 狀態可啟動遊戲
+    if (!room || room.hostId !== userId || room.state !== 'LOBBY') return;
 
-      const playerIds = Object.keys(room.players);
-      
-      // 💡 5人以上自動雙臥底機制
-      const undercoverCount = playerIds.length >= 5 ? 2 : 1;
-      const shuffledIds = [...playerIds].sort(() => 0.5 - Math.random());
-      room.undercoverIds = shuffledIds.slice(0, undercoverCount);
-      
-      let pool = [];
-      if (room.settings.category === '全部') {
-        Object.values(POOLS).forEach(arr => pool = pool.concat(arr));
-      } else {
-        pool = POOLS[room.settings.category] || [];
-      }
+    const playerIds = Object.keys(room.players);
+    if (playerIds.length < 2) return;
 
-      let availablePool = pool.filter(song => !room.playedSongs.includes(song));
-      if (availablePool.length < 2) {
-        room.playedSongs = [];
-        availablePool = [...pool];
-      }
-
-      const shuffledSongs = [...availablePool].sort(() => 0.5 - Math.random());
-      const isFirstCivilian = Math.random() > 0.5;
-      const civilianQuery = isFirstCivilian ? shuffledSongs[0] : shuffledSongs[1];
-      const undercoverQuery = isFirstCivilian ? shuffledSongs[1] : shuffledSongs[0];
-
-      room.playedSongs.push(civilianQuery, undercoverQuery);
-      room.civilianSong = civilianQuery;
-      room.undercoverSong = undercoverQuery;
-
-      const [civilianUrl, undercoverUrl] = await Promise.all([
-        fetchAppleMusicPreview(civilianQuery), fetchAppleMusicPreview(undercoverQuery)
-      ]);
-
-      if (!civilianUrl || !undercoverUrl) {
-        if(rooms[roomId]) {
-            rooms[roomId].state = 'LOBBY';
-            io.to(roomId).emit('error_msg', 'Apple API 抓歌失敗，請重新開始。');
-            resetSinglePlayerIdleTimer(roomId);
-        }
-        return;
-      }
-
-      playerIds.forEach(uid => {
-        if (!room.players[uid]) return; 
-        room.players[uid].isLoaded = false;
-        const targetUrl = room.undercoverIds.includes(uid) ? undercoverUrl : civilianUrl;
-        io.to(room.players[uid].socketId).emit('PRELOAD_MUSIC', targetUrl);
-      });
-
-      room.globalLoadingTimeout = setTimeout(() => {
-        const currentRoom = rooms[roomId];
-        if (currentRoom && currentRoom.state === 'LOADING') {
-            Object.keys(currentRoom.players).forEach(uid => {
-                if (!currentRoom.players[uid].isLoaded) {
-                    removePlayer(roomId, uid, '下載音樂超時，你已被移出房間！');
-                }
-            });
-            checkDownloadProgress(roomId);
-        }
-      }, 10000);
+    room.state = 'LOADING';
+    room.votes = {}; 
+    if (room.singlePlayerIdleTimer) {
+      clearTimeout(room.singlePlayerIdleTimer);
+      room.singlePlayerIdleTimer = null;
     }
+
+    // 建立本局玩家名單快照
+    room.roundPlayers = {};
+    playerIds.forEach(uid => {
+      room.roundPlayers[uid] = { name: room.players[uid].name };
+    });
+
+    io.to(roomId).emit('game_starting');
+
+    // 5人以上自動雙臥底機制（雙臥底聽同一首臥底歌）
+    const undercoverCount = playerIds.length >= 5 ? 2 : 1;
+    const shuffledIds = [...playerIds].sort(() => 0.5 - Math.random());
+    room.undercoverIds = shuffledIds.slice(0, undercoverCount);
+    
+    // 當選擇「全部」時，先隨機抽一個分類，確保平民與臥底曲風同語系但不同歌手
+    let targetCategory = room.settings.category;
+    if (targetCategory === '全部') {
+      const categories = Object.keys(POOLS);
+      targetCategory = categories[Math.floor(Math.random() * categories.length)];
+    }
+    const pool = POOLS[targetCategory] || POOLS['華語流行'];
+
+    let availablePool = pool.filter(song => !room.playedSongs.includes(song));
+    if (availablePool.length < 6) {
+      room.playedSongs = [];
+      availablePool = [...pool];
+    }
+
+    const picked = await pickTwoValidSongs(availablePool);
+    if (!picked || !rooms[roomId]) {
+      if (rooms[roomId]) {
+        rooms[roomId].state = 'LOBBY';
+        broadcastRoomState(roomId);
+        io.to(roomId).emit('error_msg', 'Apple 音樂伺服器連線逾時，請再按一次開始。');
+        resetSinglePlayerIdleTimer(roomId);
+      }
+      return;
+    }
+
+    const [civilianTrack, undercoverTrack] = picked;
+    room.playedSongs.push(civilianTrack.query, undercoverTrack.query);
+    room.civilianSong = civilianTrack.query;
+    room.undercoverSong = undercoverTrack.query;
+    room.civilianUrl = civilianTrack.url;
+    room.undercoverUrl = undercoverTrack.url;
+
+    Object.keys(room.players).forEach(uid => {
+      if (!room.players[uid]) return; 
+      room.players[uid].isLoaded = false;
+      const targetUrl = room.undercoverIds.includes(uid) ? undercoverTrack.url : civilianTrack.url;
+      io.to(room.players[uid].socketId).emit('PRELOAD_MUSIC', targetUrl);
+    });
+
+    // 💡 溫和超時防呆：12秒後若有人網路卡住未回報完成，直接強制全員開播，不踢人、不刪分
+    room.globalLoadingTimeout = setTimeout(() => {
+      const currentRoom = rooms[roomId];
+      if (currentRoom && currentRoom.state === 'LOADING') {
+        startPlayingPhase(roomId);
+      }
+    }, 12000);
   });
 
   socket.on('music_loaded', ({ roomId, userId }) => {
@@ -521,31 +645,19 @@ io.on('connection', (socket) => {
   socket.on('submit_vote', ({ roomId, userId, targetId }) => {
     const room = rooms[roomId];
     if (!room || room.state !== 'VOTING') return;
-    if (room.isVotingLocked) return; 
+    // 禁止投給自己
+    if (targetId === userId) return;
 
-    if (targetId === null) delete room.votes[userId]; 
-    else room.votes[userId] = targetId;
-
-    const onlinePlayers = Object.keys(room.players).filter(uid => room.players[uid].status === 'ONLINE');
-    const votedOnlineCount = onlinePlayers.filter(uid => room.votes[uid] !== undefined).length;
-
-    io.to(roomId).emit('vote_status_update', {
-      votedCount: votedOnlineCount,
-      totalCount: onlinePlayers.length
-    });
-
-    if (votedOnlineCount >= onlinePlayers.length && onlinePlayers.length > 0) {
-      room.isVotingLocked = true; 
-      const fastEndRemaining = 3000; 
-      room.phaseEndTime = Date.now() + fastEndRemaining;
-      
-      if (room.votingTimeout) clearTimeout(room.votingTimeout);
-      room.votingTimeout = setTimeout(() => {
-        calculateVotes(roomId);
-      }, fastEndRemaining);
-
-      broadcastRoomState(roomId);
+    if (targetId === null || !room.players[targetId]) {
+      delete room.votes[userId]; 
+    } else {
+      room.votes[userId] = targetId;
     }
+
+    // 即時向全房間廣播最新亮票狀態（誰投了誰）
+    io.to(roomId).emit('votes_live_update', {
+      votes: room.votes
+    });
   });
 });
 

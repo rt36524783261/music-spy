@@ -21,15 +21,16 @@
             box-shadow: 0 15px 35px rgba(139, 115, 85, 0.12); 
             text-align: center; position: relative; overflow: hidden; 
             border: 2px solid #eae2d5;
+            box-sizing: border-box;
         }
         .content-wrapper { position: relative; z-index: 1; }
 
         h1 { margin-top: 0; margin-bottom: 20px; color: #6b5b4e; font-weight: 900; letter-spacing: 2px; }
         .label { font-size: 14px; font-weight: bold; color: #a39589; margin-bottom: 10px; display: block; }
-        input, select { padding: 14px; font-size: 16px; width: 80%; margin-bottom: 20px; border-radius: 12px; border: 2px solid #f2ede4; background: #faf8f5; color: #5a4b41; text-align: center; font-weight: bold; transition: all 0.3s; }
+        input, select { padding: 14px; font-size: 16px; width: 80%; margin-bottom: 20px; border-radius: 12px; border: 2px solid #f2ede4; background: #faf8f5; color: #5a4b41; text-align: center; font-weight: bold; transition: all 0.3s; box-sizing: border-box; }
         input:focus, select:focus { outline: none; border-color: #e3a87c; background: #ffffff; }
 
-        button { padding: 14px 24px; font-size: 16px; font-weight: 700; margin: 10px 5px; cursor: pointer; border-radius: 12px; border: none; background-color: #e3a87c; color: white; box-shadow: 0 4px 12px rgba(227, 168, 124, 0.3); transition: all 0.2s; white-space: nowrap; }
+        button { padding: 14px 24px; font-size: 16px; font-weight: 700; margin: 10px 5px; cursor: pointer; border-radius: 12px; border: none; background-color: #e3a87c; color: white; box-shadow: 0 4px 12px rgba(227, 168, 124, 0.3); transition: all 0.2s; white-space: nowrap; font-family: inherit; }
         button:hover { background-color: #cf9366; transform: translateY(-2px); }
         .btn-secondary { background-color: #9cbca7; box-shadow: 0 4px 12px rgba(156, 188, 167, 0.3); }
         .btn-secondary:hover { background-color: #84a690; }
@@ -50,16 +51,16 @@
         .btn-kick { background-color: #e07a5f; color: white; border: none; padding: 4px 10px; font-size: 12px; border-radius: 8px; margin-left: 10px; cursor: pointer; box-shadow: none; }
         .btn-kick:hover { background-color: #c9654b; transform: none; }
 
+        .btn-preview { background-color: #fff; border: 1.5px solid #cf9366; color: #cf9366; padding: 4px 10px; font-size: 12px; border-radius: 8px; margin: 0; box-shadow: none; flex-shrink: 0; }
+        .btn-preview:hover, .btn-preview.playing { background-color: #cf9366; color: #fff; transform: none; }
+
         .header-btns { 
             display: flex; justify-content: flex-start; flex-wrap: nowrap; align-items: center; 
             width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; 
             gap: 3px; padding: 4px 2px 8px 2px; scrollbar-width: thin;
         }
         @media (min-width: 600px) {
-            .header-btns {
-                justify-content: center;
-                overflow-x: visible;
-            }
+            .header-btns { justify-content: center; overflow-x: visible; }
         }
 
         .room-header { border-bottom: 2px dashed #f2ede4; padding-bottom: 15px; margin-bottom: 20px; display: flex; flex-direction: column; align-items: center;}
@@ -67,15 +68,14 @@
         .room-settings-info { width: 100%; font-size: 14px; color: #a39589; margin-top: 10px; font-weight: bold; }
         
         .player-list-item { font-size: 16px; font-weight: bold; padding: 12px 15px; margin: 8px 0; background: #faf8f5; border-radius: 12px; color: #7a6a5d; border: 1px solid #f2ede4; display: flex; justify-content: space-between; align-items: center; overflow: hidden; }
-        
         .player-info-left { display: flex; align-items: center; flex: 1; min-width: 0; margin-right: 10px; }
         .player-name-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
-        .player-status-right { white-space: nowrap; flex-shrink: 0; display: flex; align-items: center; }
+        .player-status-right { white-space: nowrap; flex-shrink: 0; display: flex; align-items: center; font-size: 14px; }
 
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(74, 64, 54, 0.6); z-index: 999; justify-content: center; align-items: center; backdrop-filter: blur(3px); }
-        .modal-box { background: #ffffff; padding: 30px; border-radius: 20px; width: 85%; max-width: 380px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); text-align: center; max-height: 80vh; display: flex; flex-direction: column; border: 2px solid #eae2d5; }
-        .modal-msg { margin-bottom: 20px; font-size: 18px; font-weight: bold; color: #6b5b4e; }
-        .modal-btns { display: flex; justify-content: center; gap: 15px; margin-top: 20px; }
+        .modal-box { background: #ffffff; padding: 25px; border-radius: 20px; width: 85%; max-width: 380px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); text-align: center; max-height: 80vh; display: flex; flex-direction: column; border: 2px solid #eae2d5; box-sizing: border-box; }
+        .modal-msg { margin-bottom: 15px; font-size: 18px; font-weight: bold; color: #6b5b4e; }
+        .modal-btns { display: flex; justify-content: center; gap: 10px; margin-top: 15px; flex-wrap: wrap; }
 
         .rank-list-container { overflow-y: auto; flex: 1; text-align: left; }
         .rank-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #f2ede4; font-size: 15px; font-weight: bold; color: #7a6a5d; }
@@ -83,23 +83,19 @@
         .rank-name-box { flex: 1; min-width: 0; margin-right: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
         .rank-score-box { flex-shrink: 0; color: #cf9366; font-size: 16px; }
 
-        /* 💡 歐泥醬 & 啵嚕醬 雙貓並排搖晃動畫 */
-        .twin-cats-container {
-            display: flex; justify-content: center; gap: 15px; margin: 15px auto 5px auto;
-        }
+        /* 歐泥醬 & 啵嚕醬 雙貓並排搖晃動畫 */
+        .twin-cats-container { display: flex; justify-content: center; gap: 15px; margin: 15px auto 5px auto; }
         .cat-img {
             width: 100px; height: 100px; object-fit: cover;
             border-radius: 50%; border: 3px solid #e3a87c;
             box-shadow: 0 8px 20px rgba(139, 115, 85, 0.2);
             background-color: #fffaf4;
         }
-        /* 左邊歐泥醬動畫 */
         .cat-left { animation: catBobLeft 1s ease-in-out infinite alternate; }
         @keyframes catBobLeft {
             0% { transform: translateY(0) rotate(-2deg); }
             100% { transform: translateY(-8px) rotate(2deg); }
         }
-        /* 右邊啵嚕醬動畫（延遲 0.3秒產生錯開節奏） */
         .cat-right { animation: catBobRight 1s ease-in-out infinite alternate 0.3s; }
         @keyframes catBobRight {
             0% { transform: translateY(0) rotate(2deg); }
@@ -115,15 +111,144 @@
             transition: width 0.2s linear, background-color 0.3s;
         }
 
-        #countdownNumber, #voteTimer { font-size: 60px; font-weight: 900; color: #e07a5f; text-shadow: 2px 4px 10px rgba(224, 122, 95, 0.2); margin: 10px 0; }
-        .vote-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
-        .vote-btn { padding: 15px; background: #faf8f5; border: 2px solid #f2ede4; border-radius: 12px; font-size: 16px; font-weight: bold; color: #7a6a5d; cursor: pointer; transition: 0.2s; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; position: relative; }
-        .vote-btn.selected { background: #e07a5f; color: white; border-color: #c9654b; transform: scale(1.05); }
-
-        #resultTitle { font-size: 32px; font-weight: 900; margin-bottom: 15px; }
+        #countdownNumber, #voteTimer { font-size: 56px; font-weight: 900; color: #e07a5f; text-shadow: 2px 4px 10px rgba(224, 122, 95, 0.2); margin: 5px 0; }
         
-        .song-reveal-box { background: #faf8f5; border: 1px solid #f2ede4; border-radius: 12px; padding: 15px; margin-bottom: 15px; text-align: left; }
-        .eliminated-name { font-weight: bold; }
+        /* 💡 防破圖三道鎖：投票網格與即時名條膠囊設計 */
+        .vote-grid { 
+            display: grid; 
+            grid-template-columns: repeat(2, minmax(0, 1fr)); 
+            gap: 10px; 
+            margin-top: 15px; 
+        }
+        .vote-btn { 
+            padding: 12px 10px; 
+            background: #faf8f5; 
+            border: 2px solid #f2ede4; 
+            border-radius: 14px; 
+            color: #7a6a5d; 
+            cursor: pointer; 
+            transition: all 0.2s; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: flex-start;
+            min-height: 78px;
+            height: auto;
+            box-sizing: border-box;
+            white-space: normal;
+            margin: 0;
+            box-shadow: 0 2px 6px rgba(139, 115, 85, 0.06);
+        }
+        .vote-btn:hover:not(.self-btn) { transform: translateY(-2px); border-color: #e3a87c; background: #fffaf4; }
+        .vote-btn.selected { 
+            background: #fff4f1; 
+            color: #c9654b; 
+            border-color: #e07a5f; 
+            box-shadow: 0 4px 12px rgba(224, 122, 95, 0.25);
+        }
+        .vote-btn.self-btn { 
+            background: #f2ede4; 
+            color: #a39589; 
+            border-style: dashed; 
+            cursor: not-allowed; 
+            box-shadow: none;
+        }
+        .vote-target-name {
+            font-size: 15px;
+            font-weight: 900;
+            width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            margin-bottom: 6px;
+        }
+        .voter-tags-wrap {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            justify-content: center;
+            width: 100%;
+            min-height: 22px;
+        }
+        .voter-tag {
+            background: #e07a5f;
+            color: #ffffff;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 999px;
+            max-width: 85px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            box-shadow: 0 2px 4px rgba(224, 122, 95, 0.25);
+            animation: popIn 0.15s ease-out;
+        }
+        .voter-tag.my-tag {
+            background: #cf9366;
+            border: 1px solid #fff;
+        }
+        @keyframes popIn {
+            0% { transform: scale(0.7); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* 💡 簡單明瞭的結算畫面設計 */
+        #resultTitle { font-size: 28px; font-weight: 900; margin-bottom: 8px; }
+        .song-reveal-box { background: #faf8f5; border: 1px solid #f2ede4; border-radius: 12px; padding: 12px 15px; margin-bottom: 15px; text-align: left; }
+        .song-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 6px 0; }
+        .song-row:first-child { border-bottom: 1px dashed #eaddcc; padding-bottom: 10px; margin-bottom: 4px; }
+        .song-info-left { flex: 1; min-width: 0; }
+        .song-title-text { color: #7a6a5d; font-weight: bold; font-size: 15px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+        .result-detail-list {
+            background: #faf8f5;
+            border: 1px solid #f2ede4;
+            border-radius: 12px;
+            padding: 10px 12px;
+            margin-bottom: 20px;
+            max-height: 220px;
+            overflow-y: auto;
+            text-align: left;
+        }
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 4px;
+            border-bottom: 1px dashed #eaddcc;
+            font-size: 14px;
+            font-weight: bold;
+            color: #6b5b4e;
+        }
+        .result-row:last-child { border-bottom: none; }
+        .result-row-left {
+            flex: 1;
+            min-width: 0;
+            margin-right: 8px;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+        .role-badge {
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 6px;
+            color: #fff;
+            flex-shrink: 0;
+        }
+        .role-spy { background-color: #e07a5f; }
+        .role-civ { background-color: #9cbca7; }
+        .score-pill {
+            flex-shrink: 0;
+            padding: 3px 9px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 900;
+        }
+        .score-win { background-color: #fff3e6; color: #d97736; border: 1px solid #f3c69f; }
+        .score-zero { background-color: #f0ebe3; color: #a39589; }
 
         #toast { visibility: hidden; min-width: 150px; max-width: 80%; background-color: #333; color: #fff; text-align: center; border-radius: 8px; padding: 10px; position: fixed; z-index: 1000; left: 50%; bottom: 30px; transform: translateX(-50%); font-size: 14px; opacity: 0; transition: opacity 0.3s, bottom 0.3s; word-wrap: break-word; font-weight: bold; }
         #toast.show { visibility: visible; opacity: 1; bottom: 50px; }
@@ -139,7 +264,7 @@
         <div class="content-wrapper">
             <h1>音樂臥底</h1>
             <span class="label">輸入暱稱</span>
-            <input type="text" id="nameInput" placeholder="預設: 天飛巴庫">
+            <input type="text" id="nameInput" placeholder="預設: 飛天巴庫" maxlength="14">
             <div style="margin-top: 5px;"><button onclick="createRoom()">建立房間</button></div>
             <hr style="border: none; border-top: 2px dashed #f2ede4; margin: 30px 0;">
             <div style="display: flex; justify-content: center; gap: 10px; align-items: center;">
@@ -160,13 +285,12 @@
                     <button id="settingBtn" class="btn-outline btn-setting btn-sm" style="display: none;" onclick="openSettings()">遊戲設定</button>
                     <button id="leaveBtn" class="btn-outline btn-sm" onclick="leaveRoom()">退出房間</button>
                 </div>
-                <!-- 💡 預設字眼改成「全部」 -->
                 <div class="room-settings-info" id="displaySettings">設定：15秒 | 全部</div>
             </div>
             <div id="playerList" style="margin: 20px 0; min-height: 150px;"></div>
             
             <div style="margin-top: 30px; display: flex; justify-content: center; gap: 10px; align-items: center;">
-                <button id="readyBtn" onclick="toggleReady()">準備 / 取消</button>
+                <button id="readyBtn" onclick="toggleReady()">準備遊戲</button>
                 <button id="startBtn" class="btn-danger btn-disabled" style="display: none;" disabled onclick="startGame()">開始遊戲</button>
             </div>
         </div>
@@ -177,13 +301,11 @@
             <h1 id="playStatusTitle" style="color: #cf9366;">音檔下載中...</h1>
             <p id="playStatusDesc" style="color: #a39589; font-weight: bold;">請確保手機音量已開啟</p>
             
-            <!-- 💡 歐泥醬與啵嚕醬 雙貓並排區塊 -->
             <div id="catWrapper" style="display: none;">
                 <div class="twin-cats-container">
                     <img src="onijang.png" alt="歐泥醬" class="cat-img cat-left">
                     <img src="bolujang.png" alt="啵嚕醬" class="cat-img cat-right">
                 </div>
-                <!-- 💡 專屬動態陪伴文字 -->
                 <div id="catLabelText" style="font-weight: bold; color: #6b5b4e; font-size: 14px; margin-top: 8px;"></div>
             </div>
 
@@ -200,8 +322,8 @@
 
     <div id="votingScreen" class="container" style="display: none;">
         <div class="content-wrapper">
-            <h1 style="color: #e07a5f;">討論與投票</h1>
-            <p id="voteStatusHint" style="color: #a39589; font-weight: bold; margin: 0;">點擊頭像抓出臥底，再點可取消 (已投: 0/0)</p>
+            <h1 style="color: #e07a5f; margin-bottom: 8px;">直覺抓臥底！</h1>
+            <p id="voteStatusHint" style="color: #a39589; font-weight: bold; margin: 0; font-size: 14px;">點擊玩家投票，時間結束前皆可換人</p>
             <div id="voteTimer">--</div>
             <div id="voteGrid" class="vote-grid"></div>
         </div>
@@ -210,18 +332,31 @@
     <div id="resultScreen" class="container" style="display: none;">
         <div class="content-wrapper">
             <h1 id="resultTitle">--</h1>
-            <p style="font-size: 18px; color: #a39589; font-weight: bold; margin-bottom: 20px;">本局臥底是：<span id="resultSpy" style="color: #e07a5f; font-size: 24px;">--</span></p>
+            <p style="font-size: 16px; color: #a39589; font-weight: bold; margin: 0 0 15px 0;">
+                本局臥底：<span id="resultSpy" style="color: #e07a5f; font-size: 20px;">--</span>
+            </p>
             
             <div class="song-reveal-box">
-                <div style="font-size: 14px; color: #a39589; margin-bottom: 8px;">🎵 平民聽的歌：<br><span id="resultCivilianSong" style="color: #7a6a5d; font-weight: bold; font-size: 16px;">--</span></div>
-                <div style="font-size: 14px; color: #a39589;">🎧 臥底聽的歌：<br><span id="resultUndercoverSong" style="color: #7a6a5d; font-weight: bold; font-size: 16px;">--</span></div>
+                <div class="song-row">
+                    <div class="song-info-left">
+                        <span style="font-size: 12px; color: #a39589;">🎵 平民聽的歌</span>
+                        <span id="resultCivilianSong" class="song-title-text">--</span>
+                    </div>
+                    <button id="previewCivBtn" class="btn-preview" onclick="togglePreview('civ')">🔊 試聽</button>
+                </div>
+                <div class="song-row">
+                    <div class="song-info-left">
+                        <span style="font-size: 12px; color: #a39589;">🎧 臥底聽的歌</span>
+                        <span id="resultUndercoverSong" class="song-title-text">--</span>
+                    </div>
+                    <button id="previewSpyBtn" class="btn-preview" onclick="togglePreview('spy')">🔊 試聽</button>
+                </div>
             </div>
 
-            <p style="font-size: 16px; color: #7a6a5d; background: #faf8f5; padding: 10px; border-radius: 10px; margin-bottom: 20px;">
-                被淘汰的玩家：<br><span id="resultEliminated">--</span>
-            </p>
+            <div class="label" style="text-align: left; margin-bottom: 6px;">📊 本局投票與得分明細</div>
+            <div id="resultDetailList" class="result-detail-list"></div>
 
-            <button class="btn-secondary" style="width: 100%;" onclick="switchView('roomScreen')">返回房間</button>
+            <button class="btn-secondary" style="width: 100%; margin: 0;" onclick="backToRoom()">返回房間</button>
         </div>
     </div>
 
@@ -236,16 +371,19 @@
         </div>
     </div>
 
+    <!-- 排行榜 Modal -->
     <div id="rankModal" class="modal-overlay">
         <div class="modal-box">
             <div class="modal-msg">🏆 玩家排行榜</div>
             <div id="rankListContainer" class="rank-list-container"></div>
             <div class="modal-btns">
-                <button class="btn-secondary" onclick="document.getElementById('rankModal').style.display='none'">關閉</button>
+                <button id="resetScoreBtn" class="btn-outline" style="display: none; padding: 10px 16px;" onclick="confirmResetScores()">🔄 重置分數</button>
+                <button class="btn-secondary" style="margin: 0;" onclick="document.getElementById('rankModal').style.display='none'">關閉</button>
             </div>
         </div>
     </div>
 
+    <!-- 通用確認/提示 Modal -->
     <div id="customModal" class="modal-overlay">
         <div class="modal-box" style="display:block;">
             <div id="modalMsg" class="modal-msg"></div>
@@ -257,6 +395,7 @@
         </div>
     </div>
 
+    <!-- 遊戲設定 Modal -->
     <div id="settingsModal" class="modal-overlay">
         <div class="modal-box" style="display:block;">
             <div class="modal-msg">房間設定</div>
@@ -268,7 +407,6 @@
                 <option value="30">30 秒</option>
             </select>
             <span class="label">題庫歌單</span>
-            <!-- 💡 下拉選單預設改為「全部」 -->
             <select id="selectCategory">
                 <option value="華語流行">華語流行</option>
                 <option value="K-POP">K-POP</option>
@@ -291,14 +429,38 @@
         let myUserId = sessionStorage.getItem('music_spy_uid') || ('USER_' + Math.random().toString(36).substr(2, 9));
         sessionStorage.setItem('music_spy_uid', myUserId);
         document.getElementById('nameInput').value = sessionStorage.getItem('music_spy_name') || '';
+        
         let currentRoomId = null;
         let globalTimerInterval = null; 
         let myVoteTarget = null;
         let globalPlayers = {}; 
         let globalScores = {}; 
+        let globalVotes = {};
+        let globalHostId = null;
         let globalHistoryList = [];
         let globalSettingsDuration = 15;
         let lastTickSecond = -1;
+
+        // 試聽專用狀態
+        let previewUrls = { civ: '', spy: '' };
+        let currentPreviewType = null;
+
+        // 💡 HTML 安全轉義防呆，防止特殊符號破壞版面
+        function escapeHtml(str) {
+            return String(str || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        // 解鎖手機瀏覽器音訊權限
+        function unlockAudio() {
+            const audio = document.getElementById('bgm');
+            if (!audio) return;
+            audio.play().then(() => { audio.pause(); }).catch(() => {});
+        }
 
         let audioCtx = null;
         function playWoodblockTick() {
@@ -367,10 +529,28 @@
             document.getElementById('customModal').style.display = 'flex';
             document.getElementById('modalBtnOk').onclick = () => { document.getElementById('customModal').style.display='none'; if(onOk) onOk(); };
         }
+
+        function stopAllAudio() {
+            const audio = document.getElementById('bgm');
+            if (audio && !audio.paused) {
+                audio.pause();
+            }
+            currentPreviewType = null;
+            updatePreviewButtons();
+        }
+
         function switchView(viewId) {
+            if (viewId !== 'playingScreen' && viewId !== 'resultScreen') {
+                stopAllAudio();
+            }
             ['homeScreen', 'roomScreen', 'playingScreen', 'votingScreen', 'resultScreen'].forEach(id => {
                 document.getElementById(id).style.display = (id === viewId) ? 'block' : 'none';
             });
+        }
+
+        function backToRoom() {
+            stopAllAudio();
+            switchView('roomScreen');
         }
 
         function startGlobalTimer(remainingMs, elementId, isPlayingPhase = false) {
@@ -417,20 +597,25 @@
 
         function getMyName() {
             let name = document.getElementById('nameInput').value.trim();
-            if (name === "") name = "天飛巴庫";
+            if (name === "") name = "飛天巴庫";
             sessionStorage.setItem('music_spy_name', name);
             return name;
         }
 
-        function createRoom() { socket.emit('create_room', { userId: myUserId, userName: getMyName() }); }
+        function createRoom() {
+            unlockAudio();
+            socket.emit('create_room', { userId: myUserId, userName: getMyName() });
+        }
         function joinRoom() {
             const inputRoomId = document.getElementById('roomInput').value.trim();
             if (!inputRoomId) return showAlert("請輸入房間碼！");
+            unlockAudio();
             socket.emit('join_room', { roomId: inputRoomId, userId: myUserId, userName: getMyName() });
         }
         function leaveRoom() {
             if (!currentRoomId) return;
             showConfirm(`確定要${document.getElementById('leaveBtn').innerText}嗎？`, () => {
+                stopAllAudio();
                 socket.emit('leave_room', { roomId: currentRoomId, userId: myUserId });
                 currentRoomId = null;
                 switchView('homeScreen');
@@ -445,8 +630,9 @@
             document.getElementById('settingsModal').style.display = 'none';
         }
 
-        function openRankModal() {
+        function renderRankList() {
             const container = document.getElementById('rankListContainer');
+            if (!container) return;
             container.innerHTML = '';
             const sortedPlayerIds = Object.keys(globalPlayers).sort((a, b) => {
                 return (globalScores[b] || 0) - (globalScores[a] || 0); 
@@ -456,16 +642,35 @@
             sortedPlayerIds.forEach(uid => {
                 const p = globalPlayers[uid];
                 const score = globalScores[uid] || 0;
-                container.innerHTML += `
-                    <div class="rank-item">
-                        <div class="rank-name-box" onclick="showToast('${p.name}')">
-                            <span style="color: #9cbca7; margin-right: 5px;">#${rankIndex}</span>${p.name}
-                        </div>
-                        <div class="rank-score-box">${score} 分</div>
-                    </div>`;
+                const item = document.createElement('div');
+                item.className = 'rank-item';
+                item.innerHTML = `
+                    <div class="rank-name-box">
+                        <span style="color: #9cbca7; margin-right: 5px;">#${rankIndex}</span>${escapeHtml(p.name)}
+                    </div>
+                    <div class="rank-score-box">${score} 分</div>`;
+                item.querySelector('.rank-name-box').onclick = () => showToast(p.name);
+                container.appendChild(item);
                 rankIndex++; 
             });
+
+            const resetBtn = document.getElementById('resetScoreBtn');
+            if (resetBtn) {
+                resetBtn.style.display = (globalHostId === myUserId) ? 'inline-block' : 'none';
+            }
+        }
+
+        function openRankModal() {
+            renderRankList();
             document.getElementById('rankModal').style.display = 'flex';
+        }
+
+        function confirmResetScores() {
+            document.getElementById('rankModal').style.display = 'none';
+            showConfirm("確定要將所有玩家的排行榜分數歸零嗎？", () => {
+                socket.emit('reset_scores', { roomId: currentRoomId, userId: myUserId });
+                showToast("已重置排行榜分數！");
+            });
         }
 
         function openHistoryModal() {
@@ -477,9 +682,9 @@
                 globalHistoryList.forEach(h => {
                     container.innerHTML += `
                         <div class="rank-item" style="flex-direction: column; align-items: flex-start;">
-                            <div style="font-size: 13px; color: #a39589; margin-bottom: 4px;">第 ${h.round} 局 (${h.category}) - 勝者：<span style="color: #e07a5f;">${h.winner}</span></div>
-                            <div style="font-size: 14px; color: #7a6a5d;">🎵 平民：${h.civilianSong}</div>
-                            <div style="font-size: 14px; color: #7a6a5d;">🎧 臥底：${h.undercoverSong}</div>
+                            <div style="font-size: 13px; color: #a39589; margin-bottom: 4px;">第 ${h.round} 局 (${escapeHtml(h.category)}) - 結果：<span style="color: #e07a5f;">${escapeHtml(h.winner)}</span></div>
+                            <div style="font-size: 14px; color: #7a6a5d;">🎵 平民：${escapeHtml(h.civilianSong)}</div>
+                            <div style="font-size: 14px; color: #7a6a5d;">🎧 臥底：${escapeHtml(h.undercoverSong)}</div>
                         </div>`;
                 });
             }
@@ -489,6 +694,7 @@
         socket.on('error_msg', showAlert);
         
         socket.on('error_to_home', (msg) => {
+            stopAllAudio();
             showAlert(msg, () => {
                 currentRoomId = null;
                 switchView('homeScreen');
@@ -496,64 +702,14 @@
         });
         
         socket.on('room_destroyed', () => { 
+            stopAllAudio();
             showAlert("房主已解散房間或閒置過久！", () => { currentRoomId = null; switchView('homeScreen'); }); 
         });
 
         socket.on('room_joined', (roomId) => { currentRoomId = roomId; switchView('roomScreen'); });
 
-        socket.on('room_state_update', (roomState) => {
-            if (!currentRoomId) return;
-            globalPlayers = roomState.players; 
-            globalScores = roomState.scores; 
-            globalHistoryList = roomState.historyList || [];
-            globalSettingsDuration = roomState.settings.duration;
-
-            const isResult = document.getElementById('resultScreen').style.display === 'block';
-            const isPlayingOrVoting = document.getElementById('playingScreen').style.display === 'block' || document.getElementById('votingScreen').style.display === 'block';
-
-            if (isResult && roomState.state !== 'LOADING') {
-                return; 
-            }
-
-            if (roomState.state === 'PLAYING') {
-                switchView('playingScreen');
-                document.getElementById('playStatusTitle').innerText = '仔細聽！';
-                document.getElementById('playStatusDesc').innerText = '找出那個音樂不一樣的騙子';
-                document.getElementById('downloadList').style.display = 'none';
-                document.getElementById('catWrapper').style.display = 'block';
-                // 💡 在這裡將字眼改為歐寶與啵寶
-                document.getElementById('catLabelText').innerText = '♪ 歐寶 × 啵寶｜當前歌單：' + roomState.settings.category;
-                document.getElementById('progressContainer').style.display = 'block';
-                document.getElementById('countdownNumber').style.display = 'block';
-                
-                startGlobalTimer(roomState.phaseRemaining, 'countdownNumber', true);
-                return;
-            } else if (roomState.state === 'VOTING') {
-                switchView('votingScreen');
-                
-                const audio = document.getElementById('bgm');
-                if (audio && !audio.paused) {
-                    audio.pause();
-                }
-                myVoteTarget = null;
-                
-                renderVoteGrid(roomState.players);
-                startGlobalTimer(roomState.phaseRemaining, 'voteTimer', false);
-                return;
-            } else if (roomState.state === 'LOBBY') {
-                if (isPlayingOrVoting) {
-                    if (roomState.lastResult) {
-                        renderResultScreen(roomState.lastResult);
-                        showToast('連線恢復，已為你同步結算畫面');
-                        return;
-                    } else {
-                        switchView('roomScreen');
-                    }
-                } else if (!isResult) {
-                    switchView('roomScreen');
-                }
-            }
-
+        // 更新大廳準備室 DOM（即使人在結算畫面也會在背景保持最新狀態）
+        function updateLobbyDOM(roomState) {
             document.getElementById('displayRoomId').innerText = currentRoomId;
             document.getElementById('displaySettings').innerText = `設定：${roomState.settings.duration}秒 | ${roomState.settings.category}`;
             document.getElementById('selectDuration').value = roomState.settings.duration;
@@ -571,22 +727,52 @@
             Object.keys(roomState.players).forEach(uid => {
                 const p = roomState.players[uid];
                 const hostText = (uid === roomState.hostId) ? '<span style="font-size: 12px; color: #cf9366; margin-left: 4px;">(房主)</span>' : '';
-                let statusText = p.isReady ? '<span style="color: #9cbca7;">準備完成</span>' : '<span style="color: #c7bcae;">準備中</span>';
+                
+                let statusText = '';
+                if (p.status === 'OFFLINE') {
+                    statusText = '<span style="color: #e07a5f;">💤 暫離中</span>';
+                } else if (p.isReady) {
+                    statusText = '<span style="color: #9cbca7;">✔ 準備完成</span>';
+                } else {
+                    statusText = '<span style="color: #c7bcae;">準備中</span>';
+                }
+
                 if (!p.isReady) allReady = false; 
 
-                let kickButtonHtml = (isHost && uid !== myUserId) ? `<button class="btn-kick" onclick="kickPlayer('${uid}')">踢出</button>` : '';
+                const row = document.createElement('div');
+                row.className = 'player-list-item';
+                row.innerHTML = `
+                    <div class="player-info-left">
+                        <span style="margin-right: 5px; flex-shrink: 0;">${index} -</span>
+                        <span class="player-name-text">${escapeHtml(p.name)}</span>
+                        <div style="flex-shrink: 0;">${hostText}</div>
+                    </div>
+                    <div class="player-status-right">${statusText}</div>`;
+                
+                row.querySelector('.player-name-text').onclick = () => showToast(p.name);
 
-                listDiv.innerHTML += `
-                    <div class="player-list-item">
-                        <div class="player-info-left">
-                            <span style="margin-right: 5px; flex-shrink: 0;">${index} -</span>
-                            <span class="player-name-text" onclick="showToast('${p.name}')">${p.name}</span>
-                            <div style="flex-shrink: 0;">${hostText}</div>
-                        </div>
-                        <div class="player-status-right">${statusText} ${kickButtonHtml}</div>
-                    </div>`;
+                if (isHost && uid !== myUserId) {
+                    const kickBtn = document.createElement('button');
+                    kickBtn.className = 'btn-kick';
+                    kickBtn.innerText = '踢出';
+                    kickBtn.onclick = () => kickPlayer(uid);
+                    row.querySelector('.player-status-right').appendChild(kickBtn);
+                }
+
+                listDiv.appendChild(row);
                 index++;
             });
+
+            // 動態切換「準備遊戲 / 取消準備」按鈕外觀
+            const readyBtn = document.getElementById('readyBtn');
+            const myPlayer = roomState.players[myUserId];
+            if (myPlayer && myPlayer.isReady) {
+                readyBtn.innerText = '取消準備';
+                readyBtn.className = 'btn-secondary';
+            } else {
+                readyBtn.innerText = '準備遊戲';
+                readyBtn.className = '';
+            }
 
             const startBtn = document.getElementById('startBtn');
             if (isHost) {
@@ -602,23 +788,85 @@
             } else {
                 startBtn.style.display = 'none';
             }
+
+            if (document.getElementById('rankModal').style.display === 'flex') {
+                renderRankList();
+            }
+        }
+
+        socket.on('room_state_update', (roomState) => {
+            if (!currentRoomId) return;
+            globalPlayers = roomState.players || {}; 
+            globalScores = roomState.scores || {}; 
+            globalVotes = roomState.votes || {};
+            globalHostId = roomState.hostId;
+            globalHistoryList = roomState.historyList || [];
+            globalSettingsDuration = roomState.settings.duration;
+
+            // 始終在背景更新準備室 DOM，避免從結算返回時畫面過期
+            updateLobbyDOM(roomState);
+
+            const isResult = document.getElementById('resultScreen').style.display === 'block';
+            const isPlayingOrVoting = document.getElementById('playingScreen').style.display === 'block' || document.getElementById('votingScreen').style.display === 'block';
+
+            if (roomState.state === 'PLAYING') {
+                switchView('playingScreen');
+                document.getElementById('playStatusTitle').innerText = '仔細聽！';
+                document.getElementById('playStatusDesc').innerText = '觀察大家的表情與節奏，找出臥底';
+                document.getElementById('downloadList').style.display = 'none';
+                document.getElementById('catWrapper').style.display = 'block';
+                document.getElementById('catLabelText').innerText = '♪ 歐寶 × 啵寶｜當前歌單：' + roomState.settings.category;
+                document.getElementById('progressContainer').style.display = 'block';
+                document.getElementById('countdownNumber').style.display = 'block';
+                
+                startGlobalTimer(roomState.phaseRemaining, 'countdownNumber', true);
+                return;
+            } else if (roomState.state === 'VOTING') {
+                stopAllAudio();
+                switchView('votingScreen');
+                
+                myVoteTarget = globalVotes[myUserId] || null;
+                renderVoteGrid(globalPlayers, globalVotes);
+                startGlobalTimer(roomState.phaseRemaining, 'voteTimer', false);
+                return;
+            } else if (roomState.state === 'LOBBY') {
+                if (isPlayingOrVoting) {
+                    if (roomState.lastResult) {
+                        renderResultScreen(roomState.lastResult);
+                        showToast('連線恢復，已為你同步結算畫面');
+                        return;
+                    } else {
+                        switchView('roomScreen');
+                    }
+                } else if (!isResult) {
+                    switchView('roomScreen');
+                }
+            }
         });
 
         function kickPlayer(targetUserId) {
-            showConfirm("確定要把這傢伙踢出房間嗎？", () => {
+            showConfirm("確定要把這位玩家踢出房間嗎？", () => {
                 socket.emit('kick_player', { roomId: currentRoomId, targetUserId: targetUserId, hostId: myUserId });
             });
         }
 
         function toggleReady() {
             if (!currentRoomId) return;
-            const audio = document.getElementById('bgm');
-            audio.play().then(() => { audio.pause(); }).catch(e => console.warn("音訊解鎖失敗"));
+            unlockAudio();
             socket.emit('toggle_ready', { roomId: currentRoomId, userId: myUserId });
         }
-        function startGame() { socket.emit('start_game', { roomId: currentRoomId, userId: myUserId }); }
+
+        function startGame() {
+            if (!currentRoomId) return;
+            unlockAudio();
+            const startBtn = document.getElementById('startBtn');
+            startBtn.classList.add('btn-disabled');
+            startBtn.disabled = true;
+            socket.emit('start_game', { roomId: currentRoomId, userId: myUserId });
+        }
 
         socket.on('game_starting', () => {
+            stopAllAudio();
             switchView('playingScreen');
             document.getElementById('playStatusTitle').innerText = '音檔下載中...';
             document.getElementById('playStatusDesc').innerText = '請確保手機音量開啟';
@@ -632,7 +880,7 @@
             for(let uid in globalPlayers) {
                 dlList.innerHTML += `
                     <div class="dl-item" id="dl_${uid}">
-                        <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 10px;">${globalPlayers[uid].name}</span>
+                        <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 10px;">${escapeHtml(globalPlayers[uid].name)}</span>
                         <span style="color:#e07a5f; flex-shrink: 0;">下載中...</span>
                     </div>`;
             }
@@ -642,88 +890,225 @@
             const el = document.getElementById('dl_' + uid);
             if(el && globalPlayers[uid]) {
                 el.innerHTML = `
-                    <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 10px;">${globalPlayers[uid].name}</span>
+                    <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 10px;">${escapeHtml(globalPlayers[uid].name)}</span>
                     <span style="color:#9cbca7; flex-shrink: 0;">已就緒</span>`;
             }
         });
 
         socket.on('PRELOAD_MUSIC', (url) => {
             const audio = document.getElementById('bgm');
-            audio.src = url; audio.load();
-            audio.oncanplaythrough = () => {
-                audio.oncanplaythrough = null; 
+            let hasReported = false;
+            const reportLoaded = () => {
+                if (hasReported) return;
+                hasReported = true;
+                audio.oncanplaythrough = null;
+                audio.onloadeddata = null;
                 document.getElementById('playStatusTitle').innerText = '你已下載完成';
                 document.getElementById('playStatusDesc').innerText = '等待其他人載入...';
                 socket.emit('music_loaded', { roomId: currentRoomId, userId: myUserId });
             };
+            audio.oncanplaythrough = reportLoaded;
+            audio.onloadeddata = reportLoaded;
+            audio.src = url;
+            audio.load();
         });
 
         socket.on('START_PLAYING_MUSIC', () => {
             const audio = document.getElementById('bgm');
             audio.currentTime = 0; 
-            audio.play().catch(e => console.error(e));
+            audio.play().catch(e => console.error("播放失敗:", e));
         });
 
-        function renderVoteGrid(players) {
+        // 💡 即時公開亮票系統：將投票者的名字膠囊貼在被投玩家的按鈕上
+        function renderVoteGrid(players, votesMap = {}) {
             const grid = document.getElementById('voteGrid');
             grid.innerHTML = '';
+
+            // 統計每個目標目前被哪些人投
+            const votersByTarget = {};
+            let totalVotesCast = 0;
+            for (const voterId in votesMap) {
+                const targetId = votesMap[voterId];
+                if (targetId && players[targetId] && players[voterId]) {
+                    if (!votersByTarget[targetId]) votersByTarget[targetId] = [];
+                    votersByTarget[targetId].push({
+                        uid: voterId,
+                        name: players[voterId].name
+                    });
+                    totalVotesCast++;
+                }
+            }
+
+            const totalPlayers = Object.keys(players).length;
+            const hint = document.getElementById('voteStatusHint');
+            if (hint) {
+                hint.innerText = `點擊他人投票，時間結束前皆可換人 (已投: ${totalVotesCast}/${totalPlayers})`;
+            }
+
             for (const uid in players) {
+                const isSelf = (uid === myUserId);
                 const btn = document.createElement('button');
                 btn.className = 'vote-btn';
-                btn.innerText = players[uid].name;
-                btn.onclick = () => handleVoteClick(uid, btn);
-                if (myVoteTarget === uid) btn.classList.add('selected'); 
+                if (isSelf) btn.classList.add('self-btn');
+                if (myVoteTarget === uid) btn.classList.add('selected');
+
+                const nameDiv = document.createElement('div');
+                nameDiv.className = 'vote-target-name';
+                nameDiv.innerText = isSelf ? `${players[uid].name} (自己)` : players[uid].name;
+
+                const tagsWrap = document.createElement('div');
+                tagsWrap.className = 'voter-tags-wrap';
+
+                const voters = votersByTarget[uid] || [];
+                voters.forEach(v => {
+                    const tag = document.createElement('span');
+                    tag.className = 'voter-tag' + (v.uid === myUserId ? ' my-tag' : '');
+                    tag.innerText = `👈 ${v.name}`;
+                    tagsWrap.appendChild(tag);
+                });
+
+                btn.appendChild(nameDiv);
+                btn.appendChild(tagsWrap);
+
+                if (!isSelf) {
+                    btn.onclick = () => handleVoteClick(uid);
+                } else {
+                    btn.onclick = () => showToast("不能投給自己喔！");
+                }
+
                 grid.appendChild(btn);
             }
         }
 
-        function handleVoteClick(uid, btnElement) {
+        function handleVoteClick(uid) {
+            if (uid === myUserId) return;
             if (myVoteTarget === uid) {
                 myVoteTarget = null;
-                btnElement.classList.remove('selected');
             } else {
                 myVoteTarget = uid;
-                document.querySelectorAll('.vote-btn').forEach(b => b.classList.remove('selected'));
-                btnElement.classList.add('selected');
             }
             socket.emit('submit_vote', { roomId: currentRoomId, userId: myUserId, targetId: myVoteTarget });
         }
 
-        socket.on('vote_status_update', ({ votedCount, totalCount }) => {
-            const hint = document.getElementById('voteStatusHint');
-            if (hint) {
-                hint.innerText = `點擊頭像抓出臥底，再點可取消 (已投: ${votedCount}/${totalCount})`;
-            }
+        // 收到任何人投票或換票時，即時重繪名條位置
+        socket.on('votes_live_update', ({ votes }) => {
+            globalVotes = votes || {};
+            myVoteTarget = globalVotes[myUserId] || null;
+            renderVoteGrid(globalPlayers, globalVotes);
         });
+
+        // 結算畫面試聽功能
+        function updatePreviewButtons() {
+            const civBtn = document.getElementById('previewCivBtn');
+            const spyBtn = document.getElementById('previewSpyBtn');
+            if (!civBtn || !spyBtn) return;
+
+            if (currentPreviewType === 'civ') {
+                civBtn.innerText = '⏹️ 停止';
+                civBtn.classList.add('playing');
+            } else {
+                civBtn.innerText = '🔊 試聽';
+                civBtn.classList.remove('playing');
+            }
+
+            if (currentPreviewType === 'spy') {
+                spyBtn.innerText = '⏹️ 停止';
+                spyBtn.classList.add('playing');
+            } else {
+                spyBtn.innerText = '🔊 試聽';
+                spyBtn.classList.remove('playing');
+            }
+        }
+
+        function togglePreview(type) {
+            const audio = document.getElementById('bgm');
+            const targetUrl = previewUrls[type];
+            if (!targetUrl) return showToast("無試聽音檔");
+
+            if (currentPreviewType === type && !audio.paused) {
+                audio.pause();
+                currentPreviewType = null;
+                updatePreviewButtons();
+                return;
+            }
+
+            audio.pause();
+            currentPreviewType = type;
+            updatePreviewButtons();
+            audio.src = targetUrl;
+            audio.currentTime = 0;
+            audio.play().catch(() => {
+                currentPreviewType = null;
+                updatePreviewButtons();
+            });
+            audio.onended = () => {
+                currentPreviewType = null;
+                updatePreviewButtons();
+            };
+        }
 
         function renderResultScreen(data) {
             clearInterval(globalTimerInterval);
+            stopAllAudio();
             myVoteTarget = null; 
             
             switchView('resultScreen');
             
             const title = document.getElementById('resultTitle');
             title.innerText = data.winner;
-            // 💡 勝利文字若包含「平民」，標題字體顏色改為代表勝利的綠色，否則為臥底紅
-            title.style.color = data.winner.includes('平民') ? '#9cbca7' : '#e07a5f';
+            if (data.winner.includes('完美潛伏')) {
+                title.style.color = '#e07a5f';
+            } else if (data.winner.includes('識破')) {
+                title.style.color = '#9cbca7';
+            } else {
+                title.style.color = '#cf9366';
+            }
             
             const spyEl = document.getElementById('resultSpy');
             spyEl.innerText = data.undercoverName;
-            spyEl.style.color = '#e07a5f';
 
             document.getElementById('resultCivilianSong').innerText = data.civilianSong;
             document.getElementById('resultUndercoverSong').innerText = data.undercoverSong;
+            previewUrls.civ = data.civilianUrl || '';
+            previewUrls.spy = data.undercoverUrl || '';
+            updatePreviewButtons();
 
-            let eliminatedHtml = '';
-            if (!data.eliminatedData || data.eliminatedData.length === 0) {
-                eliminatedHtml = '<span style="color: #a39589;">無人被淘汰</span>';
-            } else {
-                eliminatedHtml = data.eliminatedData.map(p => {
-                    const fontColor = p.isUndercover ? '#e07a5f' : '#9cbca7'; 
-                    return `<span class="eliminated-name" style="color: ${fontColor};">${p.name}</span>`;
-                }).join('<span style="color: #7a6a5d;">, </span>');
+            const detailContainer = document.getElementById('resultDetailList');
+            detailContainer.innerHTML = '';
+
+            if (data.playerResults && data.playerResults.length > 0) {
+                data.playerResults.forEach(p => {
+                    const row = document.createElement('div');
+                    row.className = 'result-row';
+
+                    const roleClass = p.isUndercover ? 'role-spy' : 'role-civ';
+                    const roleLabel = p.isUndercover ? '🕵️ 臥底' : '👤 平民';
+
+                    let actionText = '';
+                    if (p.votedForName) {
+                        actionText = `➔ 投給 <span style="color:#4a4036;">${escapeHtml(p.votedForName)}</span>`;
+                    } else {
+                        actionText = `<span style="color:#a39589;">➔ 未投票</span>`;
+                    }
+
+                    if (p.note) {
+                        actionText += ` <span style="font-size:12px; color:#a39589;">(${escapeHtml(p.note)})</span>`;
+                    }
+
+                    const scoreClass = p.earnedScore > 0 ? 'score-win' : 'score-zero';
+                    const scoreText = `+${p.earnedScore} 分`;
+
+                    row.innerHTML = `
+                        <div class="result-row-left">
+                            <span class="role-badge ${roleClass}">${roleLabel}</span>
+                            <span>${escapeHtml(p.name)}</span>
+                            ${actionText}
+                        </div>
+                        <div class="score-pill ${scoreClass}">${scoreText}</div>
+                    `;
+                    detailContainer.appendChild(row);
+                });
             }
-            document.getElementById('resultEliminated').innerHTML = eliminatedHtml;
         }
 
         socket.on('GAME_RESULT', renderResultScreen);
